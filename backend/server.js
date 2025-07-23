@@ -2,7 +2,9 @@ const express = require("express");
 const http = require("http");
 const socketIO = require("socket.io");
 const path = require("path");
+const {parseTorrent} = require("./torrent-parser");
 const multer = require("multer");
+const cors = require("cors");
 
 const app = express();
 const server = http.createServer(app);
@@ -15,10 +17,14 @@ const io = socketIO(server, {
 
 const PORT = process.env.PORT || 3001;
 
-const {parseTorrent} = require("./torrent-parser");
-
 // Middleware
 app.use(express.json());
+
+app.use(cors({
+    origin: "http://localhost:3000"
+}));
+
+const upload = multer({dest: "uploads/"});
 
 app.post("/api/torrent", upload.single("torrent"), (req, res) => {
     try {

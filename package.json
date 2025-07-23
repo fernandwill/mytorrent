@@ -15,6 +15,7 @@
         "backend"
     ],
     "dependencies": {
-        "bncode": "^0.5.3"
+        "bncode": "^0.5.3",
+        "cors": "^2.8.5"
     }
 }

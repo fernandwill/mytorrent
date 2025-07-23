@@ -3,6 +3,7 @@ import io from "socket.io-client";
 
 function App() {
     const [connected, setConnected] = useState(false);
+    const [torrents, setTorrents] = useState([]);
 
     useEffect (() => {
         const newSocket = io("http://localhost:3001");
@@ -36,6 +37,7 @@ function App() {
 
                 const torrentInfo = await response.json();
                 console.log("Torrent uploaded: ", torrentInfo);
+                setTorrents(prev => [...prev, torrentInfo]);
             } catch (error) {
                 console.error("Error uploading torrent: ", error);
             }
@@ -55,7 +57,21 @@ function App() {
             onChange={handleFileUpload}
             />
         </div>
-    </div>
+
+        {torrents.length > 0 && (
+            <div style={{marginTop: "20px"}}>
+                <h2>Uploaded Torrents</h2>
+                {torrents.map((torrent, index) => (
+                    <div key={index} style={{border: "1px solid #ccc", padding: "0.75rem", margin: "0.75rem 0"}}>
+                        <h3>{torrent.name}</h3>
+                        <p>Size: {torrent.length} bytes</p>
+                        <p>Pieces: {torrent.pieces.length / 20}</p>
+                        <p>Tracker: {torrent.announce}</p>
+                    </div>
+                ))}
+            </div>
+            )}
+        </div>
     );
 }
 
