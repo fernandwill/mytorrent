@@ -50,7 +50,7 @@ class DownloadManager {
 
             for (let i = 0; i < piecesToDownload; i++) {
                 // Find next piece to download
-                const nextPieceIndex = downloadState.pieces.findIndex(pieces) {
+                const nextPieceIndex = downloadState.pieces.findIndex(piece => !piece);
                     if (nextPieceIndex !== -1) {
                         downloadState.pieces[nextPieceIndex] = true;
                         downloadState.downloadedPieces++;
