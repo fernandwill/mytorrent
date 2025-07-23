@@ -1,0 +1,19 @@
+{
+    "name": "bittorrent-backend",
+    "version": "1.0.0",
+    "description": "BitTorrent client backend",
+    "main": "server.js",
+    "scripts": {
+      "dev": "nodemon server.js",
+      "start": "node server.js"
+    },
+    "dependencies": {
+      "express": "^4.18.0", 
+      "socket.io": "^4.7.0",
+      "bencode": "^3.0.0",
+      "crypto": "^1.0.1"
+    },
+    "devDependencies": {
+      "nodemon": "^3.0.0"
+    }
+  }
