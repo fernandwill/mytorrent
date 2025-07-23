@@ -2,6 +2,7 @@ const express = require("express");
 const http = require("http");
 const socketIO = require("socket.io");
 const path = require("path");
+const multer = require("multer");
 
 const app = express();
 const server = http.createServer(app);
@@ -14,8 +15,29 @@ const io = socketIO(server, {
 
 const PORT = process.env.PORT || 3001;
 
+const {parseTorrent} = require("./torrent-parser");
+
 // Middleware
 app.use(express.json());
+
+app.post("/api/torrent", upload.single("torrent"), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({error: "No torrent file uploaded."});
+        }
+
+        const torrentInfo = parseTorrent(req.file.path);
+        console.log("Parsed torrent: ", torrentInfo);
+
+        // Broadcast to connected clients
+        io.emit("torrent-added", torrentInfo);
+
+        res.json(torrentInfo);
+    } catch (error) {
+        console.error("Error parsing torrent: ", error);
+        res.status(500).json({error: "Failed to parse torrent file."});
+    }
+});
 
 // Basic route
 app.get("/api/health", (req, res) => {

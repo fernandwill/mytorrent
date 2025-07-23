@@ -3,15 +3,18 @@
     "version": "1.0.0",
     "description": "A BitTorrent client with React frontend and Node.js backend",
     "scripts": {
-      "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-      "dev:backend": "cd backend && npm run dev",
-      "dev:frontend": "cd frontend && npm start"
+        "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+        "dev:backend": "cd backend && npm run dev",
+        "dev:frontend": "cd frontend && npm start"
     },
     "devDependencies": {
-      "concurrently": "^8.2.0"
+        "concurrently": "^8.2.0"
     },
     "workspaces": [
-      "frontend",
-      "backend"
-    ]
-  }
+        "frontend",
+        "backend"
+    ],
+    "dependencies": {
+        "bncode": "^0.5.3"
+    }
+}
