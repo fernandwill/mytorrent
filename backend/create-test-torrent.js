@@ -25,7 +25,8 @@ for (let i = 0; i < fileBuffer.length; i += pieceLength) {
 
 // Create torrent structure
 const torrent = {
-    announce: Buffer.from("http://tracker.example.com:8080/announce"),
+    announce: Buffer.from("http://tracker.opentrackr.org:1337/announce"),
+    
     info: {
         name: Buffer.from(testFilename),
         length: fileBuffer.length,

@@ -5,6 +5,7 @@ const path = require("path");
 const {parseTorrent} = require("./torrent-parser");
 const multer = require("multer");
 const cors = require("cors");
+const TrackerClient = require("./tracker");
 
 const app = express();
 const server = http.createServer(app);
@@ -14,6 +15,8 @@ const io = socketIO(server, {
         methods: ["GET", "POST"]
     }
 });
+
+const tracker = new TrackerClient();
 
 const PORT = process.env.PORT || 3001;
 
@@ -26,7 +29,7 @@ app.use(cors({
 
 const upload = multer({dest: "uploads/"});
 
-app.post("/api/torrent", upload.single("torrent"), (req, res) => {
+app.post("/api/torrent", upload.single("torrent"), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({error: "No torrent file uploaded."});
@@ -35,10 +38,42 @@ app.post("/api/torrent", upload.single("torrent"), (req, res) => {
         const torrentInfo = parseTorrent(req.file.path);
         console.log("Parsed torrent: ", torrentInfo);
 
-        // Broadcast to connected clients
-        io.emit("torrent-added", torrentInfo);
+        // Contact tracker to get peers
+        try {
+            const trackerResponse = await tracker.announceToTracker(torrentInfo);
+            console.log("Tracker response: ", trackerResponse);
 
-        res.json(torrentInfo);
+            const fullTorrentInfo = {
+                ...torrentInfo,
+                peers: trackerResponse.peers,
+                seeders: trackerResponse.complete,
+                leechers: trackerResponse.incomplete,
+                interval: trackerResponse.interval
+            };
+
+        // Broadcast to connected clients
+        io.emit("torrent-added", fullTorrentInfo);
+        res.json(fullTorrentInfo);
+        } catch (trackerError) {
+            console.error("Tracker failed, but torrent parsed successfully.");
+
+            // Mock tracker response for demonstration
+            const mockTorrentInfo = {
+                ...torrentInfo,
+                peers: [
+                    {ip: "192.168.1.100", port: 6881},
+                    {ip: "10.0.0.50", port: 6882},
+                    {ip: "172.16.0.25", port: 6883},
+                ],
+                seeders: 5,
+                leechers: 12,
+                interval: 1800
+            };
+            
+            // Still return torrent info even if tracker fails
+            io.emit("torrent-added", torrentInfo);
+            res.json(torrentInfo);
+        }
     } catch (error) {
         console.error("Error parsing torrent: ", error);
         res.status(500).json({error: "Failed to parse torrent file."});
