@@ -6,6 +6,7 @@ const {parseTorrent} = require("./torrent-parser");
 const multer = require("multer");
 const cors = require("cors");
 const TrackerClient = require("./tracker");
+const DownloadManager = require("./download-manager");
 
 const app = express();
 const server = http.createServer(app);
@@ -17,6 +18,8 @@ const io = socketIO(server, {
 });
 
 const tracker = new TrackerClient();
+
+const downloadManager = new DownloadManager();
 
 const PORT = process.env.PORT || 3001;
 
@@ -43,8 +46,12 @@ app.post("/api/torrent", upload.single("torrent"), async (req, res) => {
             const trackerResponse = await tracker.announceToTracker(torrentInfo);
             console.log("Tracker response: ", trackerResponse);
 
+        // Generate download ID
+        const downloadId = `torrent-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
             const fullTorrentInfo = {
                 ...torrentInfo,
+                downloadId,
                 peers: trackerResponse.peers,
                 seeders: trackerResponse.complete,
                 leechers: trackerResponse.incomplete,
@@ -53,17 +60,21 @@ app.post("/api/torrent", upload.single("torrent"), async (req, res) => {
 
         // Broadcast to connected clients
         io.emit("torrent-added", fullTorrentInfo);
+        downloadManager.startDownload(fullTorrentInfo, io);
         res.json(fullTorrentInfo);
         } catch (trackerError) {
-            console.error("Tracker failed, but torrent parsed successfully.");
+            console.error("Tracker failed, using mock data for demonstration.");
+
+            const downloadId = `torrent-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
             // Mock tracker response for demonstration
             const mockTorrentInfo = {
                 ...torrentInfo,
+                downloadId,
                 peers: [
                     {ip: "192.168.1.100", port: 6881},
                     {ip: "10.0.0.50", port: 6882},
-                    {ip: "172.16.0.25", port: 6883},
+                    {ip: "172.16.0.25", port: 6883}
                 ],
                 seeders: 5,
                 leechers: 12,
@@ -71,14 +82,25 @@ app.post("/api/torrent", upload.single("torrent"), async (req, res) => {
             };
             
             // Still return torrent info even if tracker fails
-            io.emit("torrent-added", torrentInfo);
-            res.json(torrentInfo);
+            downloadManager.startDownload(mockTorrentInfo, io, downloadId);
+            io.emit("torrent-added", mockTorrentInfo);
+            res.json(mockTorrentInfo);
         }
     } catch (error) {
         console.error("Error parsing torrent: ", error);
         res.status(500).json({error: "Failed to parse torrent file."});
     }
 });
+
+app.post("/api/download/:torrentId", (req, res) => {
+    const torrentId = req.params.torrentId;
+
+    // In real implementation, look up torrent by ID
+    // Using recently uploaded torrent for now
+    // Its possible to store torrents in a database or memory, we'll PostgreSQL later
+
+    res.json({message: "Download started:", torrentId});
+})
 
 // Basic route
 app.get("/api/health", (req, res) => {

@@ -3,8 +3,8 @@ class DownloadManager {
         this.activeTorrents = new Map();
     }
 
-    startDownload(torrent, io) {
-        const downloadId = torrent.infoHash.toString("hex");
+    startDownload(torrent, io, providedDownloadId = null) {
+        const downloadId = providedDownloadId || torrent.infoHash.toString("hex");
 
         if (this.activeTorrents.has(downloadId)) {
             console.log("Download already active for this torrent.");
