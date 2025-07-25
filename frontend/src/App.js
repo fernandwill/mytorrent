@@ -44,6 +44,8 @@ function App() {
     });
 
     return () => newSocket.close();
+    
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleFileUpload = async (event) => {
@@ -71,90 +73,193 @@ function App() {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>MyTorrent</h1>
-      <div>Status: {connected ? "🟢 Connected" : "🔴 Disconnected"}</div>
-      <div style={{ marginTop: "20px" }}>
-        <h2>Add Torrent</h2>
-        <input type="file" accept=".torrent" onChange={handleFileUpload} />
+   <div style={{
+    minHeight:"100vh",
+    backgroundColor: "#f5f7fa",
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+   }}>
+
+    {/* Header */}
+    <header style={{
+      backgroundColor: "#2c3e50",
+      color: "white",
+      padding: "1rem 2rem",
+      boxShadow: "0 0.1rem 0.25rem rgba(0, 0, 0, 0.1)"
+    }}>
+      <h1 style={{
+        margin: 0,
+        fontSize: "1.5rem",
+        fontWeight: "600"
+      }}>
+        MyTorrent
+      </h1>
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "1rem"
+      }}>
+        <span style={{
+          padding: "0.5rem 1rem",
+          borderRadius: "20px",
+          backgroundColor: connected ? "#27ae60" : "#e74c3c",
+          fontSize: "0.875rem",
+          fontWeight: "500"
+        }}>
+          {connected ? "🟢 Connected" : "🔴 Disconnected"}
+        </span>
       </div>
+  </header>
 
-      {torrents && torrents.length > 0 && (
-        <div style={{ marginTop: "20px" }}>
-          <h2>Uploaded Torrents</h2>
-          {torrents.map((torrent, index) => {
-            // Safety check for torrent object
-            if (!torrent) return null;
-            
-            return (
-            <div
-              key={index}
-              style={{
-                border: "1px solid #ccc",
-                padding: "0.75rem",
-                margin: "0.75rem 0",
-              }}
-            >
-              <h3>{torrent.name || "Unknown"}</h3>
-              <p>Size: {torrent.length || 0} bytes</p>
-              <p>Pieces: {torrent.pieces ? torrent.pieces.length / 20 : 0}</p>
-              <p>Tracker: {torrent.announce || "Unknown"}</p>
+  {/* Main Content */}
+  <main style={{
+    maxWidth: "1200px",
+    margin: "0 auto",
+    padding: "2rem"
+  }}>
+    
+    {/* Main Content */}
+    <section style={{
+      backgroundColor: "white",
+      borderRadius: "0.75rem",
+      padding: "2rem",
+      marginBottom: "2rem",
+      boxShadow: "0 0.1rem 0.25rem rgba(0, 0, 0, 0.1)",
+      border: "1px solid #e1e8ed"
+    }}>
+      
+      <h2 style={{
+        margin: "0 0 1.5rem 0",
+        fontSize: "1.25rem",
+        fontWeight: "600",
+        color: "#2c3e50"
+      }}>Add New Torrent</h2>
 
-{(torrent.seeders !== undefined || torrent.peers || downloads[torrent.downloadId]) && (
-<div style={{ marginTop: "0.75rem" }}>
- <p>
-   Seeders: {torrent.seeders !== undefined ? torrent.seeders : 'N/A'} | Leechers: {torrent.leechers !== undefined ? torrent.leechers : 'N/A'}
- </p>
- <p>Peers found: {torrent.peers ? torrent.peers.length : 0}</p>
-
- {torrent.peers && torrent.peers.length > 0 && (
-   <details>
-     <summary>View Peers ({torrent.peers.length})</summary>
-     <div style={{ maxHeight: "150px", overflow: "auto", marginTop: "0.3rem" }}>
-       {torrent.peers.map((peer, peerIndex) => (
-         <div key={peerIndex} style={{ fontSize: "0.8rem", padding: "0.25rem" }}>
-           {peer.ip}:{peer.port}
-         </div>
-       ))}
-     </div>
-   </details>
- )}
-</div>
-)}
-
-{/* Download progress section with safety checks */}
-
-{(() => {
-    const downloadId = torrent.downloadId; // Get the ID for a specific torrent
-    const downloadInfo = downloads[downloadId]; // Get the download state of the specific torrent
-
-    console.log("Rendering download section for: ", downloadId);
-    console.log("Download info found: ", downloadInfo);
-
-    return downloadInfo && (
-        <div style={{marginTop: "0.75rem", padding: "0.5rem", backgroundColor: "#f5f5f5"}}>
-            <h4>Download Progress</h4>
-            <div style={{width: "100%", backgroundColor: "#ddd", borderRadius: "2.5rem"}}>
-                <div style={{
-                    width: `${downloadInfo.progress}%`,
-                    backgroundColor: "#4caf50",
-                    height: "1.5rem",
-                    borderRadius: "0.25rem",
-                    transition: "width 0.3s"
-                }}></div>
-            </div>
-            <p>{downloadInfo.progress}% - {downloadInfo.downloadedPieces} / {downloadInfo.totalPieces} pieces</p>
-            <p>Speed: {downloadInfo.downloadSpeed} KB/s | Status: {downloadInfo.status}</p>
+      <div style={{
+        border: "2px dashed #3498db",
+        borderRadius: "8px",
+        padding: "2rem",
+        textAlign: "center",
+        backgroundColor: "#f8fafc",
+        transition: "all 0.3s ease"
+      }}>
+        
+        <div style={{
+          fontSizze: "3rem",
+          marginBottom: "1rem"
+        }}>
+           📁
         </div>
-    );
-})()}
+
+        <p style={{
+          margin: "0 0 1rem 0",
+          color: "#7f8c8d",
+          fontSize: "1rem"
+        }}>
+          Select a torrent file to start downloading
+        </p>
+
+        <input 
+          type="file"
+          accept=".torrent"
+          onChange={handleFileUpload}
+          style={{
+            padding: "0.75rem 1.5rem",
+            backgroundColor: "#3498db",
+            color: "#ffffff",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+            fontSize: "1rem",
+            fontWeight: "500"
+          }}
+        />
+      </div>
+    </section>
+
+    {/* Torrent Section */}
+    {torrents && torrents.length > 0 && (
+      <section>
+        <h2 style={{
+          margin: "0 0 1.5rem 0",
+          fontSize: "1.25rem",
+          fontWeight: "600",
+          color: "#2c3e50"
+        }}>
+          Active Downloads ({torrents.length})
+        </h2>
+
+        <div style={{
+          display: "grid",
+          gap: "1.5rem"
+        }}>
+          {torrents.map((torrent, index) => {
+            if (!torrent) return null;
+
+            return (
+              <div key={index} style={{
+                backgroundColor: "white",
+                borderRadius: "12px",
+                padding: "1.5rem",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                border: "1px solid #e1e8ed"
+              }}>
+
+                <h3 style={{
+                  margin: "0 0 1rem 0",
+                  color: "#2c3e50"
+                }}>
+                  {torrent.name || "Unknown"}
+                </h3>
+                <p>Size: {torrent.length || 0} bytes</p>
+                <p>Pieces {torrent.pieces ? torrent.pieces.length / 20 : 0}</p>
+                <p>Tracker {torrent.announce || "Unknown"}</p>
+
+                {(torrent.seeders !== undefined || torrent.peers || downloads[torrent.downloadId]) && (
+                  <div style={{
+                    marginTop: "0.75rem"
+                  }}>
+                    <p>Seeders: {torrent.seeders !== undefined ? torrent.seeders : "N/A"} | Leechers: {torrent.leechers !== undefined ? torrent.leechers: "N/A"}</p>
+                    <p>Peers found: {torrent.peers ? torrent.peers.length : 0}</p>
+
+                {(() => {
+                  const downloadId = torrent.downloadId;
+                  const downloadInfo = downloads[downloadId];
+
+                  return downloadInfo && (
+                    <div style={{
+                      marginTop: "0.75rem",
+                      padding: "0.5rem",
+                      backgroundColor: "#f5f5f5"
+                    }}>
+                      <h4>Download Progress</h4>
+                      <div style={{
+                        width: "100%",
+                        backgroundColor: "#ddd",
+                        borderRadius: "2.5rem"
+                      }}>
+                        <div style={{
+                          width: `${downloadInfo.progress}%`,
+                          backgroundColor: "#4caf50",
+                          height: "1.5rem",
+                          borderRadius: "0.25rem",
+                          transition: "width 0.3s"
+                        }}></div>
+                      </div>
+                      <p>{downloadInfo.progress}% - {downloadInfo.downloadedPieces} / {downloadInfo.totalPieces} pieces</p>
+                      <p>Speed: {downloadInfo.downloadSpeed} KB/s | Status: {downloadInfo.status}</p>
+                    </div>
+                  );
+                  })()}
+                </div>
+              )}
             </div>
             );
-        })}
+          })}
         </div>
-      )}
-    </div>
-  );
-}
+      </section>
+    )}
+  </main>
+</div>
+)};
 
 export default App;
