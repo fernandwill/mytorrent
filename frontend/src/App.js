@@ -94,6 +94,13 @@ function App() {
       padding: "1rem 2rem",
       boxShadow: "0 0.1rem 0.25rem rgba(0, 0, 0, 0.1)"
     }}>
+      <div style={{
+        maxWidth: "1200px",
+        margin: "0 auto",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between"
+      }}>
       <h1 style={{
         margin: 0,
         fontSize: "1.5rem",
@@ -116,6 +123,7 @@ function App() {
           {connected ? "🟢 Connected" : "🔴 Disconnected"}
         </span>
       </div>
+    </div>
   </header>
 
   {/* Main Content */}
