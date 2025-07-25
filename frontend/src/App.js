@@ -6,6 +6,14 @@ function App() {
   const [torrents, setTorrents] = useState([]);
   const [downloads, setDownloads] = useState({});
 
+  const formatBytes = (bytes) => {
+    if (bytes === 0) return "0 bytes";
+    const k = 1024;
+    const size = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + size[i];
+  };
+
   useEffect(() => {
     const newSocket = io("http://localhost:3001");
 
@@ -44,7 +52,7 @@ function App() {
     });
 
     return () => newSocket.close();
-    
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -195,66 +203,184 @@ function App() {
           {torrents.map((torrent, index) => {
             if (!torrent) return null;
 
+            const downloadId = torrent.downloadId;
+            const downloadInfo = downloads[downloadId];
+
             return (
               <div key={index} style={{
                 backgroundColor: "white",
-                borderRadius: "12px",
-                padding: "1.5rem",
+                borderRadius: "0.75rem",
+                padding: "0",
                 boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-                border: "1px solid #e1e8ed"
+                border: "1px solid #e1e8ed",
+                overflow: "hidden"
               }}>
 
-                <h3 style={{
-                  margin: "0 0 1rem 0",
-                  color: "#2c3e50"
+                {/* Card Header */}
+                <div style={{
+                  padding: "1.5rem 1.5rem 1rem 1.5rem",
+                  borderBottom: "1px solid #f1f3f4"
                 }}>
-                  {torrent.name || "Unknown"}
-                </h3>
-                <p>Size: {torrent.length || 0} bytes</p>
-                <p>Pieces {torrent.pieces ? torrent.pieces.length / 20 : 0}</p>
-                <p>Tracker {torrent.announce || "Unknown"}</p>
-
-                {(torrent.seeders !== undefined || torrent.peers || downloads[torrent.downloadId]) && (
                   <div style={{
-                    marginTop: "0.75rem"
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    marginBottom: "0.75rem"
                   }}>
-                    <p>Seeders: {torrent.seeders !== undefined ? torrent.seeders : "N/A"} | Leechers: {torrent.leechers !== undefined ? torrent.leechers: "N/A"}</p>
-                    <p>Peers found: {torrent.peers ? torrent.peers.length : 0}</p>
+                  <h3 style={{
+                    margin: "0",
+                    fontSize: "1.25rem",
+                    fontWeight: "600",
+                    color: "#2c3e50",
+                    flex: "1",
+                    marginRight: "1rem"
+                  }}>
+                    📄 {torrent.name || "Unknown"}
+                  </h3>
 
-                {(() => {
-                  const downloadId = torrent.downloadId;
-                  const downloadInfo = downloads[downloadId];
-
-                  return downloadInfo && (
-                    <div style={{
-                      marginTop: "0.75rem",
-                      padding: "0.5rem",
-                      backgroundColor: "#f5f5f5"
-                    }}>
-                      <h4>Download Progress</h4>
-                      <div style={{
-                        width: "100%",
-                        backgroundColor: "#ddd",
-                        borderRadius: "2.5rem"
-                      }}>
-                        <div style={{
-                          width: `${downloadInfo.progress}%`,
-                          backgroundColor: "#4caf50",
-                          height: "1.5rem",
-                          borderRadius: "0.25rem",
-                          transition: "width 0.3s"
-                        }}></div>
-                      </div>
-                      <p>{downloadInfo.progress}% - {downloadInfo.downloadedPieces} / {downloadInfo.totalPieces} pieces</p>
-                      <p>Speed: {downloadInfo.downloadSpeed} KB/s | Status: {downloadInfo.status}</p>
-                    </div>
-                  );
-                  })()}
+                  {/* Status Badge */}
+                  <span style={{
+                    padding: "0.25rem 0.75rem",
+                    borderRadius: "12px",
+                    fontSize: "0.75rem",
+                    fontWeight: "500",
+                    backgroundColor:
+                    downloadInfo?.status === 'completed' ? '#d4edda' : 
+                    downloadInfo?.status === 'downloading' ? '#cce5ff' : '#f8f9fa',
+                    color: 
+                    downloadInfo?.status === 'completed' ? '#155724' : 
+                    downloadInfo?.status === 'downloading' ? '#0066cc' : '#6c757d'
+                  }}>
+                    {downloadInfo?.status === "completed" ? "Completed." : downloadInfo?.status === 'downloading' ? "Downloading..." : "Ready"}
+                  </span>
                 </div>
-              )}
+
+                {/* File Info Row */}
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+                  gap: "1rem",
+                  fontSize: "0.85rem",
+                  color: "#64748b"
+                }}>
+                  <div>
+                    <span style={{ 
+                      fontWeight: "500",
+                      color: "#475569"
+                    }}>Size: </span>{" "}
+                    {formatBytes(torrent.length || 0)}
+                  </div>
+
+                  <div>
+                    <span style={{
+                      fontWeight: "500",
+                      color: "#475569"
+                    }}>Pieces: </span>{" "}
+                    {torrent.pieces ? torrent.pieces.length / 20 : 0}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Download Progress Section */}
+                {downloadInfo && (
+                  <div style={{
+                    padding: "1rem 1.5rem",
+                    backgroundColor: "#f8fafc"
+                  }}>
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "0.75rem"
+                  }}>
+                  <span style={{
+                    fontSize: "0.75rem",
+                    fontWeight: "500",
+                    color: "#374151"
+                  }}>Progress: {downloadInfo.progress}%
+                  </span>
+                  <span style={{
+                    fontSize: "0.85rem",
+                    color: "#6b7280"
+                  }}>
+                  {downloadInfo.downloadedPieces} / {downloadInfo.totalPieces} pieces
+                  </span>
+                </div>
+
+                {/* Enhanced Progress Bar */}
+                <div style={{
+                  width: "100%",
+                  height: "8px",
+                  backgroundColor: "$e5e7eb",
+                  borderRadius: "4px",
+                  overflow: "hidden",
+                  marginBottom: "0.75rem"
+                }}>
+                <div style={{
+                  width: `${downloadInfo.progress}%`,
+                  height: "100%",
+                  backgroundColor: downloadInfo.status === "completed" ? "#10b981" : "#3b82f6",
+                  borderRadius: "4px",
+                  transition: "width 0.5s ease-in-out",
+                  background: downloadInfo.status === "completed" ? 
+                    "linear-gradient(90deg, #10b981 0%, #059669 100%)" : 
+                    "linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%)"  
+                }}></div>
+              </div>
+
+              {/* Speed and ETA */}
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "0.875rem",
+                color: "#6b7280"
+              }}>
+                <span>{downloadInfo.downloadSpeed} KB/s</span>
+                <span>{torrent.peers ? torrent.peers.length : 0} peers</span>
+              </div>
             </div>
-            );
-          })}
+          )}
+
+          {/* Peers Section (Collapsible) */}
+          {torrent.peers && torrent.peers.length > 0 && (
+            <details style={{
+              borderTop: "1px solid #f1f3f4"
+            }}>
+              <summary style={{
+                padding: "1rem 1.5rem",
+                cursor: "pointer",
+                fontSize: "0.875rem",
+                fontWeight: "500",
+                color: "#374151",
+                backgroundColor: "#fafbfc"
+              }}>View Connected Peers ({torrent.peers.length})
+              </summary>
+              <div style={{
+                padding: "0 1.5rem 1rem 1.5rem",
+                maxHeight: "120px",
+                overflow: "auto",
+                backgrounColor: "#fafbfc"
+              }}>
+              {torrent.peers.map((peer, peerIndex) => (
+                <div key={peerIndex} style={{
+                  padding: "0.5rem",
+                  margin: "0.25rem 0",
+                  backgroundColor: "white",
+                  borderRadius: "4px",
+                  fontSize: "0.75rem",
+                  fontFamily: "monospace",
+                  color: "#4b5563",
+                  border: "1px solid #e5e7eb"
+                }}>
+                  {peer.ip}:{peer.port}
+                </div>
+              ))}
+            </div>
+          </details>
+          )}
+        </div>
+        );
+      })}
         </div>
       </section>
     )}
