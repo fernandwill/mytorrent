@@ -93,7 +93,7 @@ function App() {
         headers: {
           "Content-Type": "application/json"
         },
-        bodt: JSON.stringify({magnetLink: magnetLink.trim()})
+        body: JSON.stringify({magnetLink: magnetLink.trim()})
       });
 
       const torrentInfo = await response.json();
