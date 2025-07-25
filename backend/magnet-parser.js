@@ -1,7 +1,7 @@
 const crypto = require("crypto");
 
 function parseMagnetLink(magnetUri) {
-    if (!magnetUri.startWith("magnet:?")) {
+    if (!magnetUri.startsWith("magnet:?")) {
         throw new Error("Invalid magnet link format.");
     }
 
@@ -10,7 +10,7 @@ function parseMagnetLink(magnetUri) {
 
     // Extract info hash from xt parameter
     const xt = params.get("xt");
-    if (!xt || !xt.startWith("urn:btih:")) {
+    if (!xt || !xt.startsWith("urn:btih:")) {
         throw new Error("Missing or invalid info hash in magnet link.");
     }
 
@@ -35,7 +35,7 @@ function parseMagnetLink(magnetUri) {
 
     // Create torrent-like object
     const torrentInfo = {
-        announce: trakcer[0] || "http://tracker.opentracker.org:1337/announce",
+        announce: trackers[0] || "http://tracker.opentracker.org:1337/announce",
         name: decodeURIComponent(displayName.replace(/\+/g, " ")),
         length: exactLength || 1048576, // Default to 1MB if not specified
         pieceLength: 32768, // 32KB pieces
@@ -72,4 +72,4 @@ function base32Decode(str) {
     return Buffer.from(bytes);
 }
 
-modules.exports = {parseMagnetLink};
+module.exports = {parseMagnetLink};

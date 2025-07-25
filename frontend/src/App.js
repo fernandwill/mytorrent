@@ -85,11 +85,13 @@ function App() {
   const handleMagnetSubmit = async () => {
     if (!magnetLink.trim()) return;
 
+    console.log("Sending magnet link: ", magnetLink.trim());
+
     try {
       const response = await fetch("http://localhost:3001/api/magnet", { 
         method: "POST",
         headers: {
-          "content-Type": "application/json"
+          "Content-Type": "application/json"
         },
         bodt: JSON.stringify({magnetLink: magnetLink.trim()})
       });

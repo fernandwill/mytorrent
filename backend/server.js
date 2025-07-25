@@ -7,7 +7,7 @@ const multer = require("multer");
 const cors = require("cors");
 const TrackerClient = require("./tracker");
 const DownloadManager = require("./download-manager");
-const {parseMagnetLink} = require("./magnet-parser")
+const {parseMagnetLink} = require("./magnet-parser");
 
 const app = express();
 const server = http.createServer(app);
@@ -25,11 +25,21 @@ const downloadManager = new DownloadManager();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
+app.use(cors({
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+}));
+
 app.use(express.json());
 
-app.use(cors({
-    origin: "http://localhost:3000"
-}));
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.path}`);
+    console.log("Headers: ", req.headers);
+    console.log("Body: ", req.body);
+    next();
+});
 
 const upload = multer({dest: "uploads/"});
 
@@ -94,7 +104,12 @@ app.post("/api/torrent", upload.single("torrent"), async (req, res) => {
 });
 
 // Magnet link endpoint
-app.post("api/magnet", async (req, res) => {
+app.post("/api/magnet", async (req, res) => {
+
+    console.log("=== MAGNET ENDPOINT HIT ==="); 
+    console.log("Received request body: ", req.body); 
+    console.log("Magnet link from body: ", req.body.magnetLink); 
+
     try {
         const {magnetLink} = req.body;
 
@@ -116,7 +131,7 @@ app.post("api/magnet", async (req, res) => {
             downloadId,
             peers: [
                 {ip: "192.168.1.101", port: 6881},
-                {ip: "10.0.051", port: 6882},
+                {ip: "10.0.0.51", port: 6882},
                 {ip: "172.16.0.26", port: 6883},
                 {ip: "203.0.113.10", port: 6884},
             ],
