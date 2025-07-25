@@ -5,6 +5,8 @@ function App() {
   const [connected, setConnected] = useState(false);
   const [torrents, setTorrents] = useState([]);
   const [downloads, setDownloads] = useState({});
+  const [uploadMethod, setUploadMethod] = useState("file");
+  const [magnetLink, setMagnetLink] = useState("");
 
   const formatBytes = (bytes) => {
     if (bytes === 0) return "0 bytes";
@@ -80,6 +82,27 @@ function App() {
     }
   };
 
+  const handleMagnetSubmit = async () => {
+    if (!magnetLink.trim()) return;
+
+    try {
+      const response = await fetch("http://localhost:3001/api/magnet", { 
+        method: "POST",
+        headers: {
+          "content-Type": "application/json"
+        },
+        bodt: JSON.stringify({magnetLink: magnetLink.trim()})
+      });
+
+      const torrentInfo = await response.json();
+      console.log("Magnet added: ", torrentInfo);
+      setTorrents(prev => [...prev, torrentInfo]);
+      setMagnetLink(""); // This clears the input
+    } catch (error) {
+      console.error("Error adding magnet: ", error)
+    }
+  };
+
   return (
    <div style={{
     minHeight:"100vh",
@@ -136,13 +159,12 @@ function App() {
     {/* Main Content */}
     <section style={{
       backgroundColor: "white",
-      borderRadius: "0.75rem",
+      borderRadius: "12px",
       padding: "2rem",
       marginBottom: "2rem",
-      boxShadow: "0 0.1rem 0.25rem rgba(0, 0, 0, 0.1)",
+      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
       border: "1px solid #e1e8ed"
     }}>
-      
       <h2 style={{
         margin: "0 0 1.5rem 0",
         fontSize: "1.25rem",
@@ -150,46 +172,127 @@ function App() {
         color: "#2c3e50"
       }}>Add New Torrent</h2>
 
+      {/* Tab-like interface */}
       <div style={{
-        border: "2px dashed #3498db",
-        borderRadius: "8px",
-        padding: "2rem",
-        textAlign: "center",
-        backgroundColor: "#f8fafc",
-        transition: "all 0.3s ease"
+        display: "flex",
+        marginBottom: "1.5rem",
+        borderBottom: "1px solid #e1e8ed"
       }}>
-        
-        <div style={{
-          fontSizze: "3rem",
-          marginBottom: "1rem"
-        }}>
-           📁
-        </div>
-
-        <p style={{
-          margin: "0 0 1rem 0",
-          color: "#7f8c8d",
-          fontSize: "1rem"
-        }}>
-          Select a torrent file to start downloading
-        </p>
-
-        <input 
-          type="file"
-          accept=".torrent"
-          onChange={handleFileUpload}
+        <button onClick={() => setUploadMethod("file")}
           style={{
             padding: "0.75rem 1.5rem",
-            backgroundColor: "#3498db",
-            color: "#ffffff",
             border: "none",
-            borderRadius: "6px",
+            backgroundColor: 
+            uploadMethod === "file" ? " #3498db" : "transparent",
+            color: uploadMethod === "file" ? "white" : "#64748b",
+            borderRadius: "6px 6px 0 0",
             cursor: "pointer",
-            fontSize: "1rem",
-            fontWeight: "500"
-          }}
-        />
+            fontWeight: "500",
+            marginRight: "0.5rem"
+          }}>📁 Torrent File</button>
+        <button onClick={() => setUploadMethod("magnet")} style={{
+          padding: "0.75rem",
+          border: "none",
+          backgroundColor: uploadMethod === "magnet" ? "#3498db" : "transparent",
+          color: uploadMethod === "magnet" ? "white" : "#64748b",
+          borderRadius: "6px 6px 0 0",
+          cursor: "pointer",
+          fontWeight: "500"
+        }}>🧲 Magnet Link</button>
       </div>
+
+      {/* File Upload */}
+      {uploadMethod === "file" && (
+        <div style={{
+          border: "2px dashed #3498db",
+          borderRadius: "8px",
+          padding: "2rem",
+          textAlign: "center",
+          backgroundColor: "#f8fafc",
+          transition: "all 0.3s ease"
+        }}>
+          <div style={{
+            fontSize: "3rem",
+            marginBottom: "1rem"
+          }}>📁</div>
+          <p style={{
+            margin: "0 0 1rem 0",
+            color: "#7f8c8d",
+            fontSize: "1rem"
+          }}>Select a torrent file to start downloading.</p>
+          <input 
+            type="file"
+            accept=".torrent"
+            onChange={handleFileUpload}
+            style={{
+              padding: "0.75rem 1.5rem",
+              backgroundColor: "#3498db",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "1rem",
+              fontWeight: "500"          
+            }}
+          />
+        </div>
+      )}
+
+        {/* Magnet Link Input */}
+        {uploadMethod === "magnet" && (
+          <div style={{
+            border: "2px dashed #e74c3c",
+            borderRadius: "8px",
+            padding: "2rem",
+            textAlign: "center",
+            backgroundColor: "#fdf2f2",
+            transition: "all 0.3s ease"
+          }}>
+            <div style={{
+              fontSize: "3rem",
+              marginBottom: "1rem"
+            }}>🧲</div>
+            <p style={{
+              margin: "0 0 1rem 0",
+              color: "#7f8c8d",
+              fontSize: "1rem"
+            }}>Paste a magnet link to start downloading.</p>
+            <div style={{
+              display: "flex",
+              gap: "0.5rem",
+              maxWidth: "600px",
+              margin: "0 auto"
+            }}>
+              <input 
+                type="text"
+                placeholder="magnet:?xt=urn:btih..."
+                value={magnetLink}
+                onChange={(e) => setMagnetLink(e.target.value)}
+                style={{
+                  flex: "1",
+                  padding: "0.75rem",
+                  border: "1px solid #ddd",
+                  borderRadius: "6px",
+                  fontSize: "1rem"
+                }}
+              />
+              <button
+                onClick={handleMagnetSubmit}
+                disabled={!magnetLink.trim()}
+                style={{
+                  padding: "0.75rem 1.5rem",
+                  backgroundColor: magnetLink.trim() ? "#e74c3c" : "#bdc3c7",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: magnetLink.trim() ? "pointer" : "not-allowed",
+                  fontSize: "1rem",
+                  fontWeight: "500"
+                }}
+              >Add Magnet</button>
+            </div>
+          </div>
+      )}
     </section>
 
     {/* Torrent Section */}

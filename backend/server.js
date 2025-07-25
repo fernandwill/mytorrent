@@ -7,6 +7,7 @@ const multer = require("multer");
 const cors = require("cors");
 const TrackerClient = require("./tracker");
 const DownloadManager = require("./download-manager");
+const {parseMagnetLink} = require("./magnet-parser")
 
 const app = express();
 const server = http.createServer(app);
@@ -89,6 +90,49 @@ app.post("/api/torrent", upload.single("torrent"), async (req, res) => {
     } catch (error) {
         console.error("Error parsing torrent: ", error);
         res.status(500).json({error: "Failed to parse torrent file."});
+    }
+});
+
+// Magnet link endpoint
+app.post("api/magnet", async (req, res) => {
+    try {
+        const {magnetLink} = req.body;
+
+        if (!magnetLink) {
+            return res.status(400).json({error: "No magnet link provided"});
+        }
+
+        console.log("Processing magnet link: ", magnetLink);
+
+        const torrentInfo = parseMagnetLink(magnetLink);
+        console.log("Parsed magnet: ", torrentInfo);
+
+        // Generate download ID
+        const downloadId = `magnet-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        // Add mock peer data (since we can't do real DHT)
+        const magnetTorrentInfo = {
+            ...torrentInfo,
+            downloadId,
+            peers: [
+                {ip: "192.168.1.101", port: 6881},
+                {ip: "10.0.051", port: 6882},
+                {ip: "172.16.0.26", port: 6883},
+                {ip: "203.0.113.10", port: 6884},
+            ],
+            seeders: 8,
+            leechers: 15,
+            interval: 1800
+        };
+
+        // Start download simulation
+        downloadManager.startDownload(magnetTorrentInfo, io, downloadId);
+
+        io.emit("torrent-added", magnetTorrentInfo);
+        res.json(magnetTorrentInfo);
+    } catch (error) {
+        console.error("Error processing magnet link: ", error);
+        res.status(500).json({error: "Failed to process magnet link: " + error.message});
     }
 });
 
