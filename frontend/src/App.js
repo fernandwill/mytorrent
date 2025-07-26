@@ -53,6 +53,22 @@ function App() {
         }));
     });
 
+    newSocket.on("download-paused", (data) => {
+      console.log("Download paused: ", data);
+      setDownloads(prev => ({
+        ...prev,
+        [data.downloadId]: {...prev[data.downloadId], status: "paused"}
+      }));
+    });
+
+    newSocket.on("download-resumed", (data) => {
+      console.log("Download resumed: ", data);
+      setDownloads(prev => ({
+        [data.downloadId]: {...prev[data.downloadId], status: "downloading"}
+      }));
+    });
+
+
     return () => newSocket.close();
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -102,6 +118,44 @@ function App() {
       setMagnetLink(""); // This clears the input
     } catch (error) {
       console.error("Error adding magnet: ", error)
+    }
+  };
+
+  const handlePauseDownload = async (downloadId) => {
+      try {
+        const response = await fetch(`http://localhost:3001/api/download/${downloadId}/pause`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to pause download.");
+        }
+
+        console.log("Download paused.");
+      } catch (error) {
+        console.error("Error pausing download", error);
+      }
+  };
+
+  const handleResumeDownload = async (downloadId) => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/download/${downloadId}/resume`, {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json"
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to resume download.");
+      }
+
+      console.log("Download resumed.");
+    } catch (error) {
+      console.error("Error resuming download.", error);
     }
   };
 
@@ -440,6 +494,83 @@ function App() {
                     "linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%)"  
                 }}></div>
               </div>
+
+              {/* Download Controls */}
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "0.75rem"
+              }}>
+                <div style={{
+                  display: "flex",
+                  gap: "0.5rem"
+                }}>
+                  {downloadInfo.status === "downloading" && (
+                    <button
+                      onClick={() => handlePauseDownload(downloadId)}
+                      style={{
+                        padding: "0.5rem 1rem",
+                        backgroundColor: "#f59e0b",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        fontSize: "0.85rem",
+                        fontWeight: "500",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.25rem"
+                      }}>
+                        Pause Download
+                      </button>
+                  )}
+
+                  {downloadInfo.status === "paused" && (
+                    <button
+                      onClick={() => handleResumeDownload(downloadId)}
+                      style={{
+                        padding: "0.5rem 1rem",
+                        backgroundColor: "#10b981",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        fontSize: "0.85rem",
+                        fontWeight: "500",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.25rem"
+                      }}>
+                        Resume Download
+                      </button>
+                  )}
+
+                  
+                  {downloadInfo.status === "completed" && (
+                    <span style={{
+                      padding: "0.5rem 1rem",
+                      backgroundColor: "#d4edda",
+                      color: "$155724",
+                      borderRadius: "6px",
+                      fontSize: "0.85rem",
+                      fontWeight: "500",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.25rem"
+                    }}>Completed</span>
+                  )}
+              </div>
+
+              <span style={{
+                fontSize: "0.85rem",
+                color: "#6b7280",
+                fontWeight: "500"
+              }}>
+                {downloadInfo.status === "paused" ? "Download Paused" :
+                downloadInfo.status === "completed" ? "Download Completed" : "Downloading"}
+              </span>
+            </div>
 
               {/* Speed and ETA */}
               <div style={{
