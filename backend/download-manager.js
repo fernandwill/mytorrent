@@ -89,6 +89,33 @@ class DownloadManager {
         return true;
     }
 
+    removeDownload(downloadId, io) {
+        const downloadState = this.activeTorrents.get(downloadId);
+        if (!downloadState) {
+            console.log("Download not found: ", downloadId);
+            return false;
+        }
+
+        // Clear any running interval 
+        const interval = this.downloadIntervals.get(downloadId);
+        if (interval) {
+            clearInterval(interval);
+            this.downloadIntervals.delete(downloadId);
+        }
+
+        // Remove from active torrents
+        this.activeTorrents.delete(downloadId);
+
+        // Emit removal event
+        io.emit("download-removed", {
+            downloadId,
+            torrentName: downloadState.torrent.name
+        });
+
+        console.log(`Removed download for ${downloadState.torrent.name}`);
+        return true;
+    }
+
     simulateDownload(downloadId, io) {
         const downloadState = this.activeTorrents.get(downloadId);
         if (!downloadState) return;

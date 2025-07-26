@@ -8,6 +8,7 @@ const cors = require("cors");
 const TrackerClient = require("./tracker");
 const DownloadManager = require("./download-manager");
 const {parseMagnetLink} = require("./magnet-parser");
+const fs = require("fs");
 
 const app = express();
 const server = http.createServer(app);
@@ -174,6 +175,45 @@ io.on("connection", (socket) => {
         console.log("Frontend disconnected: ", socket.id);
     });
 });
+
+// Remove download endpoint
+app.delete("/api/download/:downloadId", (req, res)=> {
+    const {downloadId} = req.params;
+
+    // Get download state before removing to access file info
+    const downloadState = downloadManager.getDownloadState(downloadId);
+
+    const success = downloadManager.removeDownload(downloadId, io);
+
+    if (success) {
+        // Delete torrent files if exists
+        if (downloadState && !downloadState.torrent.isMagnet) {
+            const uploadsDir = path.join(__dirname, "uploads");
+            if (fs.existsSync(uploadsDir)) {
+                fs.readdir(uploadsDir, (err, files) => {
+                    if (!err) {
+                        files.forEach(file => {
+                            const filePath = path.join(uploadsDir, file);
+                            const stats = fs.statSync(filePath);
+                            const now = new Date().getTime();
+                            const fileTime = new Date(stats.mtime).getTime();
+
+                            // Remove file older than 1 hour
+                            if (now - fileTime > 36000000) {
+                                fs.unlinkSync(filePath);
+                                console.log("Cleaned up old upload file: ", file);
+                            }
+                        });
+                    }
+                });
+            }
+        }
+
+            res.json({message: "Download removed.", downloadId});
+        } else {
+            res.status(400).json({error: "Failed to remove download"});
+        }
+    });
 
 server.listen(PORT, () => {
     console.log(`Backend server running on port ${PORT}`);

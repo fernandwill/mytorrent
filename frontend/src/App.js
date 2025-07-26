@@ -7,6 +7,7 @@ function App() {
   const [downloads, setDownloads] = useState({});
   const [uploadMethod, setUploadMethod] = useState("file");
   const [magnetLink, setMagnetLink] = useState("");
+  const [confirmDialog, setConfirmDialog] = useState({ show: false, downloadId: null, torrentName: ""});
 
   const formatBytes = (bytes) => {
     if (bytes === 0) return "0 bytes";
@@ -66,6 +67,17 @@ function App() {
       setDownloads(prev => ({
         [data.downloadId]: {...prev[data.downloadId], status: "downloading"}
       }));
+    });
+
+    newSocket.on("download-removed", (data) => {
+      console.log("Download removed: ", data);
+      setDownloads(prev => {
+        const updated = {...prev};
+        delete updated[data.downloadId];
+        return updated;
+      });
+
+      setTorrents(prev => prev.filter(torrent => torrent.downloadId !== data.downloadId));
     });
 
 
@@ -158,6 +170,37 @@ function App() {
       console.error("Error resuming download.", error);
     }
   };
+
+  const showRemoveConfirmation = (downloadId, torrentName) => {
+    setConfirmDialog({
+      show: true,
+      downloadId,
+      torrentName
+    });
+  };
+
+    const handleRemoveDownload = async () => {
+      const {downloadId} = confirmDialog;
+
+      try {
+        const response = await fetch(`http://localhost:3001/api/download/${downloadId}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json"
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to remove download.");
+        }
+
+        console.log("Download removed.");
+      } catch (error) {
+        console.error("Error removing download: ", error);
+      } finally {
+        setConfirmDialog({show: false, downloadId: null, torrentName: ""});
+      }
+    };
 
   return (
    <div style={{
@@ -546,7 +589,6 @@ function App() {
                       </button>
                   )}
 
-                  
                   {downloadInfo.status === "completed" && (
                     <span style={{
                       padding: "0.5rem 1rem",
@@ -560,6 +602,25 @@ function App() {
                       gap: "0.25rem"
                     }}>Completed</span>
                   )}
+
+              {/* Remove Button */}
+              <button
+                onClick={() => showRemoveConfirmation(downloadId, torrent.name || "Unknown")}
+                style={{
+                  padding: "0.5rem 1rem",
+                  backgroundColor: "#ef4444",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                  fontWeight: "500",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.25rem"
+                }}>
+                  Remove Torrent
+                </button>
               </div>
 
               <span style={{
@@ -629,7 +690,80 @@ function App() {
       </section>
     )}
   </main>
+  
+  {/* Confirmation Dialog */}
+  {confirmDialog.show && (
+    <div style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 1000
+    }}>
+      <div style={{
+        backgroundColor: "white",
+        padding: "2rem",
+        borderRadius: "8px",
+        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+        maxWidth: "500px",
+        width: "90%"
+      }}>
+        <h3 style={{
+          margin: "0 0 1rem 0",
+          color: "#2c3e50"
+        }}>Confirm Removal</h3>
+        <p style={{
+          margin: "0 0 1.5rem 0",
+          color: "#374151"
+        }}>
+          Are you sure you want to remove "{confirmDialog.torrentName}"? This action cannot be undone.
+        </p>
+        <div style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: "1rem"
+        }}>
+          <button
+            onClick={() => setConfirmDialog({ show: false, downloadId: null, torrentName: "" })}
+            style={{
+              padding: "0.5rem 1rem",
+              backgroundColor: "#6b7280",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "0.875rem",
+              fontWeight: "500"
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleRemoveDownload}
+            style={{
+              padding: "0.5rem 1rem",
+              backgroundColor: "#ef4444",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "0.875rem",
+              fontWeight: "500"
+            }}
+          >
+            Remove
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
 </div>
+
 )};
 
 export default App;
