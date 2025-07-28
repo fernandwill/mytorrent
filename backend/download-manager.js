@@ -1,187 +1,178 @@
+const PeerManager = require("./peer-manager");
+
 class DownloadManager {
-    constructor() {
-        this.activeTorrents = new Map();
-        this.downloadIntervals = new Map(); // Track intervals for each
+  constructor() {
+    this.activeTorrents = new Map();
+    this.peerManagers = new Map();
+  }
+
+  startDownload(torrent, io, providedDownloadId = null) {
+    const downloadId = providedDownloadId || torrent.infoHash.toString("hex");
+    
+    if (this.activeTorrents.has(downloadId)) {
+      console.log("Download already exists for this torrent.");
+      return;
     }
 
-    startDownload(torrent, io, providedDownloadId = null) {
-        const downloadId = providedDownloadId || torrent.infoHash.toString("hex");
+    const totalPieces = torrent.pieces.length / 20;
+    const downloadState = {
+      torrent,
+      totalPieces,
+      downloadedPieces: 0,
+      pieces: new Array(totalPieces).fill(false),
+      peers: torrent.peers || [],
+      progress: 0,
+      downloadSpeed: 0,
+      status: "downloading"
+    };
 
-        if (this.activeTorrents.has(downloadId)) {
-            console.log("Download already exists for this torrent.");
-            return;
-        }
+    this.activeTorrents.set(downloadId, downloadState);
 
-        const totalPieces = torrent.pieces.length / 20;
-        const downloadState = {
-            torrent,
-            totalPieces,
-            downloadedPieces: 0,
-            pieces: new Array(totalPieces).fill(false),
-            peers: torrent.peers || [],
-            progress: 0,
-            downloadSpeed: 0,
-            status: "downloading"
-        };
+    // Check if we have real peers to connect to
+    if (torrent.peers && torrent.peers.length > 0 && this.hasValidPeers(torrent.peers)) {
+      console.log(`Starting REAL download for ${torrent.name} with ${torrent.peers.length} peers`);
+      this.startRealDownload(downloadId, torrent, io);
+    } else {
+      console.log(`No valid peers available for ${torrent.name}`);
+      console.log(`This could be due to:`);
+      console.log(`- Network blocking BitTorrent traffic`);
+      console.log(`- Tracker connectivity issues`);
+      console.log(`- No active seeders for this torrent`);
+      
+      // Set status to show it's ready but waiting for peers
+      downloadState.status = "waiting_for_peers";
+      io.emit("download-waiting", {
+        downloadId,
+        message: "Waiting for peers (network may be blocking BitTorrent traffic)"
+      });
+    }
+  }
 
-        this.activeTorrents.set(downloadId, downloadState);
-        this.simulateDownload(downloadId, io);
+  // Check if we have valid peers (not mock/local IPs)
+  hasValidPeers(peers) {
+    const validPeers = peers.filter(peer => {
+      return !peer.ip.startsWith('192.168.') && 
+             !peer.ip.startsWith('10.0.') && 
+             !peer.ip.startsWith('172.16.') &&
+             !peer.ip.startsWith('127.') &&
+             peer.ip !== 'localhost';
+    });
+    
+    console.log(`Found ${validPeers.length} valid peers out of ${peers.length} total`);
+    return validPeers.length > 0;
+  }
 
-        console.log(`Started download simulation for ${torrent.name}`);
+  // Start real BitTorrent download
+  startRealDownload(downloadId, torrent, io) {
+    const torrentWithId = { ...torrent, downloadId };
+    
+    const peerManager = new PeerManager(torrentWithId, this);
+    this.peerManagers.set(downloadId, peerManager);
+    
+    // Start connecting to peers
+    peerManager.startDownload(io);
+  }
+
+  pauseDownload(downloadId, io) {
+    const downloadState = this.activeTorrents.get(downloadId);
+    if (!downloadState) {
+      console.log("Download not found:", downloadId);
+      return false;
     }
 
-    pauseDownload(downloadId, io) {
-        const downloadState = this.activeTorrents.get(downloadId);
-        if (!downloadState) {
-            console.log("Download not found: ", downloadId);
-            return false;
-        }
-
-        if (downloadState.status !== "downloading") {
-            console.log("Download is not in downloading state: ", downloadState.status);
-            return false;
-        }
-
-        // Clear the interval
-        const interval = this.downloadIntervals.get(downloadId);
-        if (interval) {
-            clearInterval(interval);
-            this.downloadIntervals.delete(downloadId);
-        }
-
-        // Update status
-        downloadState.status = "paused";
-        downloadState.downloadSpeed = 0;
-
-        // Emit pause event
-        io.emit("download-paused", {
-            downloadId,
-            status: "paused"
-        });
-
-        console.log(`Paused downloa for ${downloadState.torrent.name}`);
-        return true;
+    if (downloadState.status !== "downloading") {
+      console.log("Download is not in downloading state:", downloadState.status);
+      return false;
     }
 
-    resumeDownload(downloadId, io) {
-        const downloadState = this.activeTorrents.get(downloadId);
-        if (!downloadState) {
-            console.log("Download not found: ", downloadId);
-            return false;
-        }
-
-        if (downloadState.status !== "paused") {
-            console.log("Download is not paused: ", downloadState.status);
-            return false;
-        }
-
-        // Update status and restart simulation
-        downloadState.status = "downloading";
-        this.simulationDownload(downloadId, io);
-
-        // Emit resume event
-        io.emit("download-resumed", {
-            downloadId,
-            status: "downloading"
-        });
-
-        console.log(`Resumed download for ${downloadState.torrent.name}`);
-        return true;
+    // Stop real download if active
+    const peerManager = this.peerManagers.get(downloadId);
+    if (peerManager) {
+      peerManager.stopDownload();
     }
 
-    removeDownload(downloadId, io) {
-        const downloadState = this.activeTorrents.get(downloadId);
-        if (!downloadState) {
-            console.log("Download not found: ", downloadId);
-            return false;
-        }
+    downloadState.status = "paused";
+    downloadState.downloadSpeed = 0;
 
-        // Clear any running interval 
-        const interval = this.downloadIntervals.get(downloadId);
-        if (interval) {
-            clearInterval(interval);
-            this.downloadIntervals.delete(downloadId);
-        }
+    io.emit("download-paused", {
+      downloadId,
+      status: "paused"
+    });
 
-        // Remove from active torrents
-        this.activeTorrents.delete(downloadId);
+    console.log(`Paused download for ${downloadState.torrent.name}`);
+    return true;
+  }
 
-        // Emit removal event
-        io.emit("download-removed", {
-            downloadId,
-            torrentName: downloadState.torrent.name
-        });
-
-        console.log(`Removed download for ${downloadState.torrent.name}`);
-        return true;
+  resumeDownload(downloadId, io) {
+    const downloadState = this.activeTorrents.get(downloadId);
+    if (!downloadState) {
+      console.log("Download not found:", downloadId);
+      return false;
     }
 
-    simulateDownload(downloadId, io) {
-        const downloadState = this.activeTorrents.get(downloadId);
-        if (!downloadState) return;
-
-        const interval = setInterval(() => {
-            if (downloadState.downloadedPieces >= downloadState.totalPieces) {
-                downloadState.status = "completed";
-                downloadState.progress = 100;
-                downloadState.downloadSpeed = 0;
-
-                io.emit("download-complete", {downloadId, torrent: downloadState.torrent});
-                clearInterval(interval);
-                this.downloadIntervals.delete(downloadId);
-                return;
-            }
-
-            // Only continue if still downloading
-            if (downloadState.status !== "downloading") {
-                clearInterval(interval);
-                this.downloadIntervals.delete(downloadId);
-                return;
-            }
-
-            // Simulate downloading 1-3 pieces per second
-            const piecesToDownload = Math.min(
-                Math.floor(Math.random() * 3) + 1,
-                downloadState.totalPieces - downloadState.downloadedPieces
-            );
-
-            for (let i = 0; i < piecesToDownload; i++) {
-                const nextPieceIndex = downloadState.pieces.findIndex(piece => !piece);
-                if (nextPieceIndex !== -1) {
-                    downloadState.pieces[nextPieceIndex] = true;
-                    downloadState.downloadedPieces++;
-                }
-            }
-
-            downloadState.progress = Math.round((downloadState.downloadedPieces / downloadState.totalPieces) * 100);
-            downloadState.downloadSpeed = Math.floor(Math.random() * 500) * 100; // 100-600 KB/s
-
-            // Emit progress update
-            io.emit("download-progress", {
-                downloadId,
-                progress: downloadState.progress,
-                downloadedPieces: downloadState.downloadedPieces,
-                totalPieces: downloadState.totalPieces,
-                downloadSpeed: downloadState.downloadSpeed,
-                status: downloadState.status
-            });
-        }, 1000); // Updates every second
-
-        // Store the interval reference 
-        this.downloadIntervals.set(downloadId, interval);
-        }
-
-        getDownloadState(downloadId) {
-            return this.activeTorrents.get(downloadId);
-        }
-
-        getAllDownloads() {
-            return Array.from(this.activeTorrents.entries()).map(([id, state]) => ({
-                downloadId: id,
-                ...state
-            }));
-        }
+    if (downloadState.status !== "paused" && downloadState.status !== "waiting_for_peers") {
+      console.log("Download cannot be resumed from state:", downloadState.status);
+      return false;
     }
 
+    downloadState.status = "downloading";
+
+    // Try to resume real download if we have valid peers
+    if (this.hasValidPeers(downloadState.torrent.peers)) {
+      this.startRealDownload(downloadId, downloadState.torrent, io);
+    } else {
+      downloadState.status = "waiting_for_peers";
+      io.emit("download-waiting", {
+        downloadId,
+        message: "Still waiting for peers"
+      });
+      return false;
+    }
+
+    io.emit("download-resumed", {
+      downloadId,
+      status: "downloading"
+    });
+
+    console.log(`Resumed download for ${downloadState.torrent.name}`);
+    return true;
+  }
+
+  removeDownload(downloadId, io) {
+    const downloadState = this.activeTorrents.get(downloadId);
+    if (!downloadState) {
+      console.log("Download not found:", downloadId);
+      return false;
+    }
+
+    // Stop real download if active
+    const peerManager = this.peerManagers.get(downloadId);
+    if (peerManager) {
+      peerManager.stopDownload();
+      this.peerManagers.delete(downloadId);
+    }
+
+    this.activeTorrents.delete(downloadId);
+
+    io.emit("download-removed", {
+      downloadId,
+      torrentName: downloadState.torrent.name
+    });
+
+    console.log(`Removed download for ${downloadState.torrent.name}`);
+    return true;
+  }
+
+  getDownloadState(downloadId) {
+    return this.activeTorrents.get(downloadId);
+  }
+
+  getAllDownloads() {
+    return Array.from(this.activeTorrents.entries()).map(([id, state]) => ({
+      downloadId: id,
+      ...state
+    }));
+  }
+}
 
 module.exports = DownloadManager;

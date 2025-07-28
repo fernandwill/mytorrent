@@ -62,6 +62,18 @@ function App() {
       }));
     });
 
+    newSocket.on("download-waiting", (data) => {
+      console.log("Download waiting: ", data);
+      setDownloads(prev => ({
+        ...prev,
+        [data.downloadId]: {
+          ...prev[data.downloadId],
+          status: "waiting_for_peers",
+          message: data.message
+        }
+      }));
+    });
+
     newSocket.on("download-resumed", (data) => {
       console.log("Download resumed: ", data);
       setDownloads(prev => ({
@@ -75,6 +87,17 @@ function App() {
         const updated = {...prev};
         delete updated[data.downloadId];
         return updated;
+      });
+
+      newSocket.on("download-error", (data) => {
+        console.log("Download error: ", data);
+        setDownloads(prev => ({
+          ...prev,
+          [data.downloadId]: {
+            status: "error",
+            error: data.error
+          }
+        }));
       });
 
       setTorrents(prev => prev.filter(torrent => torrent.downloadId !== data.downloadId));
@@ -455,13 +478,18 @@ function App() {
                     fontSize: "0.75rem",
                     fontWeight: "500",
                     backgroundColor:
-                    downloadInfo?.status === 'completed' ? '#d4edda' : 
-                    downloadInfo?.status === 'downloading' ? '#cce5ff' : '#f8f9fa',
+                    downloadInfo?.status === 'completed' ? '#d4edda' : downloadInfo?.status === 'downloading' ? '#cce5ff' : 
+                    downloadInfo?.status === 'waiting_for_peers' ? '#fff3cd' :
+                    downloadInfo?.status === 'error' ? '#f8d7da' : '#f8f9fa',
                     color: 
                     downloadInfo?.status === 'completed' ? '#155724' : 
-                    downloadInfo?.status === 'downloading' ? '#0066cc' : '#6c757d'
+                    downloadInfo?.status === 'downloading' ? '#0066cc' :
+                    downloadInfo?.status === 'waiting_for_peers' ? '#856404' :
+                    downloadInfo?.status === 'error' ? '#721c24' : '#6c757d'
                   }}>
-                    {downloadInfo?.status === "completed" ? "Completed." : downloadInfo?.status === 'downloading' ? "Downloading..." : "Ready"}
+                    {downloadInfo?.status === "completed" ? "Completed." : downloadInfo?.status === 'downloading' ? "Downloading..." :
+                    downloadInfo?.status === 'waiting_for_peers' ? "Waiting for peers..." : 
+                    downloadInfo?.status === 'error' ? "Error" : "Ready"}
                   </span>
                 </div>
 

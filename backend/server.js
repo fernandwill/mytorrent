@@ -105,52 +105,78 @@ app.post("/api/torrent", upload.single("torrent"), async (req, res) => {
 });
 
 // Magnet link endpoint
+// Magnet link endpoint
 app.post("/api/magnet", async (req, res) => {
-
-    console.log("=== MAGNET ENDPOINT HIT ==="); 
-    console.log("Received request body: ", req.body); 
-    console.log("Magnet link from body: ", req.body.magnetLink); 
-
+    console.log("=== MAGNET ENDPOINT HIT ===");
+    console.log("Received request body:", req.body);
+    console.log("Magnet link from body:", req.body.magnetLink);
+    
     try {
-        const {magnetLink} = req.body;
-
-        if (!magnetLink) {
-            return res.status(400).json({error: "No magnet link provided"});
-        }
-
-        console.log("Processing magnet link: ", magnetLink);
-
-        const torrentInfo = parseMagnetLink(magnetLink);
-        console.log("Parsed magnet: ", torrentInfo);
-
+      const { magnetLink } = req.body;
+      
+      if (!magnetLink) {
+        return res.status(400).json({ error: "No magnet link provided" });
+      }
+  
+      console.log("Processing magnet link:", magnetLink);
+      
+      const torrentInfo = parseMagnetLink(magnetLink);
+      console.log("Parsed magnet successfully:", torrentInfo.name);
+      
+      // Try to contact the tracker to get real peers
+      try {
+        console.log("Attempting to contact tracker for real peers...");
+        const trackerResponse = await tracker.announceToTracker(torrentInfo);
+        console.log("Tracker response received:", trackerResponse);
+        
         // Generate download ID
         const downloadId = `magnet-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-        // Add mock peer data (since we can't do real DHT)
+        
         const magnetTorrentInfo = {
-            ...torrentInfo,
-            downloadId,
-            peers: [
-                {ip: "192.168.1.101", port: 6881},
-                {ip: "10.0.0.51", port: 6882},
-                {ip: "172.16.0.26", port: 6883},
-                {ip: "203.0.113.10", port: 6884},
-            ],
-            seeders: 8,
-            leechers: 15,
-            interval: 1800
+          ...torrentInfo,
+          downloadId,
+          peers: trackerResponse.peers,
+          seeders: trackerResponse.complete,
+          leechers: trackerResponse.incomplete,
+          interval: trackerResponse.interval
         };
-
-        // Start download simulation
+        
+        console.log("Starting download with real peers:", magnetTorrentInfo.peers.length);
+        
+        // Start download
         downloadManager.startDownload(magnetTorrentInfo, io, downloadId);
-
+        
         io.emit("torrent-added", magnetTorrentInfo);
         res.json(magnetTorrentInfo);
+        
+      } catch (trackerError) {
+        console.error("Tracker failed:", trackerError.message);
+        
+        // Generate download ID
+        const downloadId = `magnet-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Fallback without real peers
+        const magnetTorrentInfo = {
+          ...torrentInfo,
+          downloadId,
+          peers: [], // No peers available
+          seeders: 0,
+          leechers: 0,
+          interval: 1800
+        };
+        
+        downloadManager.startDownload(magnetTorrentInfo, io, downloadId);
+        io.emit("torrent-added", magnetTorrentInfo);
+        res.json(magnetTorrentInfo);
+      }
+      
     } catch (error) {
-        console.error("Error processing magnet link: ", error);
-        res.status(500).json({error: "Failed to process magnet link: " + error.message});
+      console.error("Error processing magnet link:", error);
+      console.error("Stack trace:", error.stack);
+      res.status(500).json({ error: "Failed to process magnet link: " + error.message });
     }
-});
+  });
+  
 
 app.post("/api/download/:torrentId", (req, res) => {
     const torrentId = req.params.torrentId;
@@ -166,6 +192,42 @@ app.post("/api/download/:torrentId", (req, res) => {
 app.get("/api/health", (req, res) => {
     res.json({status: "Server is running!"});
 });
+
+// Test network connectivity
+app.get('/api/test-network', async (req, res) => {
+    try {
+      console.log('Testing network connectivity...');
+      
+      // Test basic HTTP connectivity
+      const testResponse = await fetch('http://httpbin.org/get', {
+        method: 'GET',
+        headers: {
+          'User-Agent': 'MyTorrent/0.0.1'
+        }
+      });
+      
+      console.log('HTTP test status:', testResponse.status);
+      
+      if (testResponse.ok) {
+        res.json({ 
+          status: 'Network connectivity OK',
+          httpTest: 'PASS'
+        });
+      } else {
+        res.json({ 
+          status: 'Network issues detected',
+          httpTest: 'FAIL',
+          httpStatus: testResponse.status
+        });
+      }
+    } catch (error) {
+      console.error('Network test failed:', error);
+      res.json({ 
+        status: 'Network connectivity failed',
+        error: error.message
+      });
+    }
+  });  
 
 // Socket.IO connection handling
 io.on("connection", (socket) => {
