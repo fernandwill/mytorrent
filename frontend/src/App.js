@@ -257,66 +257,6 @@ function App() {
       }
     };
 
-    const ThemeToggle = () => (
-      <div style={{
-        position: "fixed",
-        right: "2rem",
-        top: "50%",
-        transform: "translateY(-50%)",
-        zIndex: 1000,
-        backgroundColor: theme.cardBackground,
-        border: `2px solid ${theme.border}`,
-        borderRadius: "50px",
-        padding: "0.5rem",
-        boxShadow: theme.shadow,
-        cursor: "pointer",
-        transition: "all 0.3s ease"
-      }}>
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.5rem",
-          padding: "0.5rem 1rem"
-        }}>
-          <div
-            onClick={() => setDarkMode(!darkMode)}
-            style={{
-              position: "relative",
-              width: "60px",
-              height: "30px",
-              backgroundColor: darkMode ? "#4a9eff" : "#ddd",
-              borderRadius: "15px",
-              transition: "background-color 0.3s ease",
-              cursor: "pointer"
-            }}>
-              <div style={{
-                position: "absolute",
-                top: "3px",
-                left: darkMode ? "33px" : "3px",
-                width: "24px",
-                height: "24px",
-                backgroundColor: "white",
-                borderRadius: "50%",
-                transition: "left 0.3s ease",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "12px"
-              }}>
-                {darkMode ? "🌙" : "☀️"}
-              </div>
-            </div>
-            <span style={{
-              fontSize: "0.85rem",
-              color: theme.textSecondary,
-              fontWeight: "500"
-            }}>
-              {darkMode ? "Dark" : "Light"}
-            </span>
-        </div>
-      </div>
-    );
-
   return (
    <div style={{
     minHeight:"100vh",
@@ -324,8 +264,6 @@ function App() {
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     transition: "background-color 0.3s ease"
    }}>
-
-    <ThemeToggle />
 
     {/* Header */}
     <header style={{
@@ -363,6 +301,28 @@ function App() {
         }}>
           {connected ? "🟢 Connected" : "🔴 Disconnected"}
         </span>
+
+        {/* Toggle Theme */}
+        <div 
+          onClick={() => setDarkMode(!darkMode)}
+          style={{
+            width: "40px",
+            height: "40px",
+            borderRadius: "50%",
+            backgroundColor: darkMode ? "#4a5568" : "#e2e8f0",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            fontSize: "1rem",
+            transition: "all 0.3s ease",
+            border: `2px solid ${darkMode ? "#718096" : "#cbd5e0"}`,
+            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)"
+          }}
+          title= {darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          >
+            {darkMode ? "☀️" : "🌙"}
+        </div>
       </div>
     </div>
   </header>
