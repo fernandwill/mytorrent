@@ -3,6 +3,8 @@
 A fully functional BitTorrent client built with React and Node.js, featuring real peer-to-peer networking, modern UI design, and complete protocol implementation.
 
 <img width="800" height="600" alt="mytorrent-display" src="https://github.com/user-attachments/assets/bc3939d7-0a79-41fb-8e20-0fd7af1f28f0" />
+<img width="800" height="600" alt="mytorrent-display-2" src="https://github.com/user-attachments/assets/2d50a472-0b44-464c-aff0-01997d206cd6" />
+
 
 
 ## 🌟 Features
