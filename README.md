@@ -7,57 +7,57 @@ A fully functional BitTorrent client built using prompt engineering with React a
 
 
 
-## 🌟 Features
+## Features
 
-### Core BitTorrent Protocol
-- ✅ **Complete .torrent file parsing** with bencode support
-- ✅ **Magnet link support** (hex and base32 hash formats)
-- ✅ **HTTP & UDP tracker communication**
-- ✅ **Real peer-to-peer connections** with TCP handshake
-- ✅ **BitTorrent message protocol** (choke, unchoke, have, bitfield, piece, request)
-- ✅ **Multi-tracker fallback** system
+# Core BitTorrent Protocol
+- **Complete .torrent file parsing** with bencode support
+- **Magnet link support** (hex and base32 hash formats)
+- **HTTP & UDP tracker communication**
+- **Real peer-to-peer connections** with TCP handshake
+- **BitTorrent message protocol** (choke, unchoke, have, bitfield, piece, request)
+- **Multi-tracker fallback** system
 
-### User Interface
-- 🎨 **Modern React frontend** with responsive design
-- 🌙 **Dark/Light theme** with smooth transitions
-- 📊 **Real-time progress tracking** with WebSocket updates
-- ⏯️ **Download controls** (pause, resume, remove)
-- 👥 **Peer information display** with connection details
-- 📱 **Mobile-friendly** responsive layout
+# User Interface
+- **React frontend** with responsive design
+- **Dark/Light theme** with smooth transitions
+- **Real-time progress tracking** with WebSocket updates
+- **Download controls** (pause, resume, remove)
+- **Peer information display** with connection details
+- **Mobile-friendly** responsive layout, try resizing the window
 
-### Advanced Features
-- 🔄 **Real-time WebSocket communication**
-- 🛡️ **Network restriction detection** and graceful fallback
-- 📁 **File upload handling** with drag & drop support
-- 🗑️ **Confirmation dialogs** for destructive actions
-- 📈 **Download statistics** (speed, pieces, peers)
-- 🔧 **Error handling** and user feedback
+# Advanced Features
+- **Real-time WebSocket communication**
+- **Network restriction detection** and graceful fallback
+- **File upload handling** with drag & drop support
+- **Confirmation dialogs** for destructive actions
+- **Download statistics** (speed, pieces, peers)
+- **Error handling** and user feedback
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 Frontend (React) ←→ WebSocket ←→ Backend (Node.js) ←→ TCP/UDP ←→ BitTorrent Network
 ```
 
-### Frontend Components
+# Frontend Components
 - **React SPA** with modern hooks and state management
 - **Socket.IO client** for real-time communication
 - **Responsive CSS-in-JS** styling with theme support
 
-### Backend Services
+# Backend Services
 - **Express.js server** with REST API endpoints
 - **Socket.IO server** for real-time updates
 - **BitTorrent protocol implementation** with peer connections
 - **File management** and cleanup utilities
 
-## 📦 Installation
+## Installation
 
-### Prerequisites
+# Prerequisites
 - Node.js 16+ and npm
 - Modern web browser
 - Network access (some corporate networks may block BitTorrent)
 
-### Setup Instructions
+# Setup Instructions
 
 1. **Clone the repository**
    ```bash
@@ -82,41 +82,41 @@ Frontend (React) ←→ WebSocket ←→ Backend (Node.js) ←→ TCP/UDP ←→
 
 The backend will run on port 3001, and the frontend on port 3000.
 
-## 🚀 Usage
+## How to Use
 
-### Adding Torrents
+# Adding Torrents
 
-#### Method 1: Torrent Files
+Method 1: Torrent Files
 1. Click the "📁 Torrent File" tab
 2. Select a .torrent file from your computer
 3. The client will parse the file and contact trackers
 
-#### Method 2: Magnet Links
+Method 2: Magnet Links
 1. Click the "🧲 Magnet Link" tab
 2. Paste a magnet link (e.g., `magnet:?xt=urn:btih:...`)
 3. Click "Add Magnet" to start the download
 
-### Managing Downloads
+# Managing Downloads
 - **Pause**: Click the "⏸️ Pause" button to pause active downloads
 - **Resume**: Click the "▶️ Resume" button to resume paused downloads
 - **Remove**: Click the "🗑️ Remove" button and confirm to delete torrents
 - **View Peers**: Expand the peer section to see connected peers
 
-### Theme Switching
+## Theme Switching
 Click the theme toggle icon (🌙/☀️) in the header to switch between dark and light modes.
 
-## 🔧 Technical Implementation
+## Technical Implementation
 
-### BitTorrent Protocol Components
+## BitTorrent Protocol Components
 
-#### 1. Torrent Parser (`torrent-parser.js`)
+1. Torrent Parser (`torrent-parser.js`)
 ```javascript
 // Parses .torrent files using bencode format
 const torrentInfo = parseTorrent(filePath);
 // Extracts: announce URL, file info, piece hashes, info hash
 ```
 
-#### 2. Magnet Parser (`magnet-parser.js`)
+2. Magnet Parser (`magnet-parser.js`)
 ```javascript
 // Parses magnet links with support for:
 // - Hex encoded hashes (40 characters)
@@ -125,7 +125,7 @@ const torrentInfo = parseTorrent(filePath);
 // - File size and name extraction
 ```
 
-#### 3. Tracker Communication (`tracker.js`, `udp-tracker.js`)
+3. Tracker Communication (`tracker.js`, `udp-tracker.js`)
 ```javascript
 // HTTP Tracker Protocol
 const trackerResponse = await announceToHTTPTracker(torrent);
@@ -134,7 +134,7 @@ const trackerResponse = await announceToHTTPTracker(torrent);
 const udpResponse = await announceToUDPTracker(trackerUrl, torrent);
 ```
 
-#### 4. Peer Manager (`peer-manager.js`)
+4. Peer Manager (`peer-manager.js`)
 ```javascript
 // Handles TCP connections to peers
 // Implements BitTorrent handshake protocol
@@ -147,7 +147,7 @@ class PeerManager {
 }
 ```
 
-#### 5. Download Manager (`download-manager.js`)
+5. Download Manager (`download-manager.js`)
 ```javascript
 // Coordinates downloads and peer connections
 // Manages download state and progress
@@ -160,9 +160,9 @@ class DownloadManager {
 }
 ```
 
-### Frontend Architecture
+## Frontend Architecture
 
-#### State Management
+# State Management
 ```javascript
 // React hooks for state management
 const [torrents, setTorrents] = useState([]);
@@ -170,7 +170,7 @@ const [downloads, setDownloads] = useState({});
 const [darkMode, setDarkMode] = useState(false);
 ```
 
-#### WebSocket Communication
+# WebSocket Communication
 ```javascript
 // Real-time updates from backend
 socket.on('download-progress', updateProgress);
@@ -178,16 +178,16 @@ socket.on('download-complete', handleComplete);
 socket.on('torrent-added', addTorrent);
 ```
 
-#### Theme System
+# Theme System
 ```javascript
 // Dynamic theming with CSS-in-JS
 const theme = darkMode ? darkTheme : lightTheme;
 // Smooth transitions between themes
 ```
 
-## 📡 API Endpoints
+## API Endpoints
 
-### REST API
+# REST API
 - `POST /api/torrent` - Upload .torrent file
 - `POST /api/magnet` - Add magnet link
 - `POST /api/download/:id/pause` - Pause download
@@ -195,7 +195,7 @@ const theme = darkMode ? darkTheme : lightTheme;
 - `DELETE /api/download/:id` - Remove download
 - `GET /api/health` - Server health check
 
-### WebSocket Events
+# WebSocket Events
 - `torrent-added` - New torrent added
 - `download-progress` - Progress updates
 - `download-complete` - Download finished
@@ -204,7 +204,7 @@ const theme = darkMode ? darkTheme : lightTheme;
 - `download-removed` - Torrent removed
 - `download-error` - Error occurred
 
-## 🗂️ Project Structure
+## Project Structure
 
 ```
 mytorrent/
@@ -229,9 +229,9 @@ mytorrent/
 └── README.md                 # This file
 ```
 
-## 🔍 BitTorrent Protocol Details
+## BitTorrent Protocol Details
 
-### Handshake Process
+# Handshake Process
 1. **Connect** to peer via TCP
 2. **Send handshake** with protocol identifier and info hash
 3. **Receive handshake** response from peer
@@ -241,7 +241,7 @@ mytorrent/
 7. **Request pieces** in 16KB blocks
 8. **Verify pieces** using SHA-1 hashes
 
-### Message Types
+# Message Types
 - `choke/unchoke` - Flow control
 - `interested/not interested` - Interest indication
 - `have` - Piece availability announcement
@@ -250,39 +250,39 @@ mytorrent/
 - `piece` - Piece data transfer
 - `cancel` - Cancel previous request
 
-### Tracker Protocol
-#### HTTP Tracker Request
+## Tracker Protocol
+# HTTP Tracker Request
 ```
 GET /announce?info_hash=...&peer_id=...&port=6881&uploaded=0&downloaded=0&left=1048576
 ```
 
-#### UDP Tracker Protocol
+# UDP Tracker Protocol
 1. **Connect** request with protocol ID
 2. **Announce** request with torrent info
 3. **Receive** peer list response
 
-## 🌐 Network Considerations
+## Network Considerations
 
-### Firewall & NAT
+# Firewall & NAT
 - Most corporate/school networks block BitTorrent traffic
 - UDP trackers may be blocked more than HTTP trackers
 - The client gracefully handles network restrictions
 - Shows appropriate error messages when blocked
 
-### Port Usage
+# Port Usage
 - **Backend server**: 3001 (HTTP/WebSocket)
 - **Frontend dev server**: 3000 (React)
 - **BitTorrent protocol**: 6881 (configurable)
 
-## 🛠️ Development
+## Development
 
-### Adding New Features
+# Adding New Features
 1. **Backend changes**: Add to appropriate service file
 2. **API endpoints**: Update `server.js` with new routes
 3. **Frontend updates**: Add UI components and state management
 4. **WebSocket events**: Add real-time communication if needed
 
-### Testing
+## Testing
 ```bash
 # Test with legal torrents
 # Linux distributions (Ubuntu, Debian)
@@ -290,25 +290,14 @@ GET /announce?info_hash=...&peer_id=...&port=6881&uploaded=0&downloaded=0&left=1
 # Open source software releases
 ```
 
-### Debugging
+## Debugging
 - Check browser console for frontend errors
 - Monitor backend terminal for protocol messages
 - Use network tab to inspect API calls
 - WebSocket messages show real-time communication
 
-## 🚨 Legal Notice
-
-This BitTorrent client is designed for:
-- ✅ **Legal content distribution** (Linux ISOs, open source software)
-- ✅ **Educational purposes** (learning P2P protocols)
-- ✅ **Personal use** with legally obtained content
-
-**Important**: Users are responsible for ensuring their use complies with local laws and regulations. Do not use this software for downloading copyrighted material without permission.
-
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-**Built with ❤️ by [Your Name]**
 
 *A modern take on peer-to-peer file sharing with web technologies*
