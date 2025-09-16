@@ -9,13 +9,5 @@
     },
     "devDependencies": {
         "concurrently": "^8.2.0"
-    },
-    "workspaces": [
-        "frontend",
-        "backend"
-    ],
-    "dependencies": {
-        "bncode": "^0.5.3",
-        "cors": "^2.8.5"
     }
 }
