@@ -127,7 +127,7 @@ class PeerManager {
 
             if (offset + 4 + messageLength > data.length) break;
 
-            const messageId = data.readUInt32BE(offset + 4);
+            const messageId = data.readUInt8(offset + 4);
             const messageData = data.slice(offset + 5, offset + 4 + messageLength);
 
             this.handleMessage(messageId, messageData, peerConnection, io);
@@ -151,6 +151,7 @@ class PeerManager {
             case 1:
                 console.log(`Peer ${peerKey} unchoked us`);
                 peerConnection.choked = false;
+                this.requestPieces(peerConnection, io);
                 break;
 
             // have
@@ -159,13 +160,19 @@ class PeerManager {
                     const pieceIndex = data.readUInt32BE(0);
                     peerConnection.pieces.add(pieceIndex);
                     console.log(`Peer ${peerKey} has piece ${pieceIndex}`);
+                    if (!peerConnection.choked && !this.pieces[pieceIndex]) {
+                        this.requestPiece(pieceIndex, peerConnection);
+                    }
                 }
                 break;
             
             // bitfield
             case 5:
-                console.log(`Received bitfiend from ${peerKey}`);
+                console.log(`Received bitfield from ${peerKey}`);
                 this.parseBitfield(data, peerConnection);
+                if (!peerConnection.choked) {
+                    this.requestPieces(peerConnection, io);
+                }
                 break;
 
             // piece
@@ -306,3 +313,8 @@ class PeerManager {
 }
 
 module.exports = PeerManager;
+
+
+
+
+
