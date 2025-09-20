@@ -18,9 +18,9 @@ class PeerManager {
         this.torrent = torrent;
         this.downloadManager = downloadManager;
         this.peers = new Map(); // Store active peer connections
-        this.pieces = new Array(Math.cell(torrent.pieces.length / 20)).fill(false);
+        this.pieces = new Array(Math.ceil(torrent.pieces.length / 20)).fill(false);
         this.pendingRequests = new Map(); // Track pieces requests
-        this.downloadPieces = 0;
+        this.downloadedPieces = 0;
 
         console.log("PeerManager initialized succesfully.");
         console.log("Total pieces: ", this.pieces.length);
@@ -216,7 +216,7 @@ class PeerManager {
         // Find pieces we need that this peer has
         for (let i = 0; i < this.pieces.length; i++) {
             if (!this.pieces[i] && peerConnection.pieces.has(i)) {
-                this.requestPieces(i, peerConnection);
+                this.requestPiece(i, peerConnection);
                 break; // Request one piece at a time for simplicity
             }
         }
@@ -278,17 +278,23 @@ class PeerManager {
     // Start connecting to peers
     startDownload(io) {
         console.log(`Starting download for ${this.torrent.name}`);
-        console.log(`Connecting to ${this.torrent.peers.length} peers`);
+
+        const peerCount = Array.isArray(this.torrent.peers) ? this.torrent.peers.length : 0;
+        console.log(`Connecting to ${peerCount} peers`);
+
+        if (peerCount === 0) {
+            console.log("No peers available to connect.");
+            return;
+        }
 
         // Connect to first few peers (limit concurrent connections)
-        const maxConnections = Math.min(5, this.torrent.length);
+        const maxConnections = Math.min(5, peerCount);
         for (let i = 0; i < maxConnections; i++) {
             setTimeout(() => {
                 this.connectToPeer(this.torrent.peers[i], io);
             }, i * 1000); // Stagger connections
         }
     }
-
     // Stop all peer connections
     stopDownload() {
         console.log("Stopping peer connections.");

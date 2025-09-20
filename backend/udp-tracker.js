@@ -6,6 +6,7 @@ class UDPTracker {
     this.socket = null;
     this.connectionId = null;
     this.transactionId = null;
+    this.peerId = this.generatePeerId();
   }
 
   closeSocket() {
@@ -178,12 +179,74 @@ class UDPTracker {
       // Generate new transaction ID for announce
       this.transactionId = crypto.randomBytes(4).readUInt32BE(0);
   
-      // Create announce request (same as before)
+      // Create announce request following BEP 15 message layout
       const announceRequest = Buffer.alloc(98);
       let offset = 0;
-  
-      // ... (all the buffer writing code stays the same) ...
-  
+
+      if (!this.connectionId) {
+        reject(new Error('Missing connection ID for UDP announce request'));
+        return;
+      }
+
+      const infoHashBuffer = this.normaliseInfoHash(torrent.infoHash);
+      if (!infoHashBuffer) {
+        reject(new Error('Invalid torrent infoHash for UDP announce'));
+        return;
+      }
+
+      const peerId = this.peerId && this.peerId.length === 20
+        ? this.peerId
+        : this.generatePeerId();
+
+      const toBigInt = (value) => {
+        if (typeof value === 'bigint') {
+          return value >= 0n ? value : 0n;
+        }
+        if (typeof value === 'number') {
+          if (!Number.isFinite(value) || value < 0) return 0n;
+          return BigInt(Math.floor(value));
+        }
+        if (typeof value === 'string' && value.trim() !== '') {
+          try {
+            const parsed = BigInt(value);
+            return parsed >= 0n ? parsed : 0n;
+          } catch (_err) {
+            return 0n;
+          }
+        }
+        return 0n;
+      };
+
+      const downloaded = toBigInt(torrent.downloaded);
+      const totalLength = toBigInt(torrent.length);
+      const uploaded = toBigInt(torrent.uploaded);
+      const remaining = totalLength > downloaded ? totalLength - downloaded : 0n;
+
+      const announceEvent = torrent && Number.isInteger(torrent.event) ? torrent.event : 0;
+      const announceKey = crypto.randomBytes(4).readUInt32BE(0);
+
+      const defaultPort = 6881;
+      const rawPort = torrent ? torrent.port : undefined;
+      const parsedPort = typeof rawPort === 'number' ? rawPort : parseInt(rawPort, 10);
+      const clientPort = Number.isInteger(parsedPort) && parsedPort > 0 && parsedPort < 65536
+        ? parsedPort
+        : defaultPort;
+
+      // Write announce payload
+      announceRequest.writeBigUInt64BE(this.connectionId, offset); offset += 8;
+      announceRequest.writeUInt32BE(1, offset); offset += 4; // action: announce
+      announceRequest.writeUInt32BE(this.transactionId, offset); offset += 4;
+      infoHashBuffer.copy(announceRequest, offset); offset += 20;
+      peerId.copy(announceRequest, offset); offset += 20;
+      announceRequest.writeBigUInt64BE(downloaded, offset); offset += 8;
+      announceRequest.writeBigUInt64BE(remaining, offset); offset += 8;
+      announceRequest.writeBigUInt64BE(uploaded, offset); offset += 8;
+      announceRequest.writeUInt32BE(announceEvent, offset); offset += 4;
+      announceRequest.writeUInt32BE(0, offset); offset += 4; // IP address (0 = default)
+      announceRequest.writeUInt32BE(announceKey, offset); offset += 4;
+      announceRequest.writeInt32BE(-1, offset); offset += 4; // numwant (-1 = default)
+      announceRequest.writeUInt16BE(clientPort, offset); offset += 2;
+
       console.log('Sending UDP announce request...');
   
       let isResolved = false; // Flag to prevent multiple resolves/rejects
@@ -295,6 +358,48 @@ class UDPTracker {
       };
     });
   }
-}  
+
+  generatePeerId() {
+    const prefix = Buffer.from('-MT0001-');
+    const suffixLength = Math.max(0, 20 - prefix.length);
+    return Buffer.concat([prefix, crypto.randomBytes(suffixLength)]).slice(0, 20);
+  }
+
+  normaliseInfoHash(infoHash) {
+    if (Buffer.isBuffer(infoHash)) {
+      if (infoHash.length === 20) {
+        return infoHash;
+      }
+      if (infoHash.length > 20) {
+        return infoHash.slice(0, 20);
+      }
+      const padded = Buffer.alloc(20);
+      infoHash.copy(padded);
+      return padded;
+    }
+
+    if (typeof infoHash === 'string') {
+      const cleaned = infoHash.startsWith('0x') ? infoHash.slice(2) : infoHash;
+      try {
+        const buffer = Buffer.from(cleaned, 'hex');
+        if (buffer.length === 20) {
+          return buffer;
+        }
+        if (buffer.length > 20) {
+          return buffer.slice(0, 20);
+        }
+        const padded = Buffer.alloc(20);
+        buffer.copy(padded, 20 - buffer.length);
+        return padded;
+      } catch (_err) {
+        return null;
+      }
+    }
+
+    return null;
+  }
+
+}
 
 module.exports = UDPTracker;
+
