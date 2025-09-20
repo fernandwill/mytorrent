@@ -1,143 +1,129 @@
 # MyTorrent
 
-A BitTorrent client built with React and Node.js featuring real peer-to-peer networking and modern UI design.
+A BitTorrent client built with React and Node.js featuring real peer-to-peer networking and a modern UI. The backend speaks to HTTP/UDP trackers, manages peer sessions, and streams progress to the React frontend over WebSockets.
 
 ## Features
 
-- Complete .torrent file parsing with bencode support
-- Magnet link support (hex and base32 hash formats)
-- HTTP and UDP tracker communication
-- Real peer-to-peer connections with TCP handshake
-- BitTorrent message protocol implementation
-- Modern React frontend with dark/light theme
-- Real-time progress tracking with WebSocket updates
-- Download controls (pause, resume, remove)
-- Peer information display
-- Network restriction detection and graceful fallback
+- Parse .torrent files with bencode support
+- Magnet link ingestion (hex and base32 hashes)
+- HTTP and UDP tracker announce with multi-tracker fallback
+- Real TCP peer connections and BitTorrent message handling
+- Automatic piece requesting and progress reporting
+- React frontend with dark/light theme, live updates, and download controls
+- Pause, resume, and remove actions exposed via the UI and API
+- Network diagnostics with graceful fallback messaging when peers are unreachable
 
 ## Installation
 
 ### Prerequisites
 - Node.js 16+ and npm
-- Modern web browser
+- A network that allows outbound TCP/UDP on typical BitTorrent ports (e.g. 6881)
 
-### Setup
-1. Clone the repository
-   ```bash
-   git clone https://github.com/yourusername/mytorrent.git
-   cd mytorrent
-   ```
+### Install dependencies
+The project is split into separate frontend and backend packages. Install each one once:
 
-2. Install dependencies
-   ```bash
-   npm install
-   ```
+```bash
+# from the repo root
+git clone https://github.com/yourusername/mytorrent.git
+cd mytorrent
 
-3. Start the development servers
-   ```bash
-   npm run dev
-   ```
+# install root helpers (concurrently, shared scripts)
+npm install
 
-4. Open http://localhost:3000 in your browser
+# install backend deps
+npm --prefix backend install
+
+# install frontend deps
+npm --prefix frontend install
+```
+
+### Running in development
+Start both services (this keeps the backend on port 3001 and the frontend on 3000):
+
+```bash
+npm run dev            # spawns backend and frontend together
+```
+
+If you prefer separate terminals:
+
+```bash
+npm --prefix backend run dev   # nodemon backend/server.js
+npm --prefix frontend start    # CRA dev server
+```
+
+Then open http://localhost:3000.
+
+### Production build quickstart
+
+```bash
+npm --prefix frontend run build
+npm --prefix backend start
+```
+
+Serve the `frontend/build` directory (e.g. with `serve`) or wire it behind a reverse proxy pointing at the backend API.
 
 ## Usage
 
-### Adding Torrents
-- **Torrent Files**: Click "Torrent File" tab and select a .torrent file
-- **Magnet Links**: Click "Magnet Link" tab and paste a magnet link
+### Adding torrents
+- **Torrent file**: Use the *Torrent File* tab and upload a `.torrent`
+- **Magnet link**: Use the *Magnet Link* tab and paste a magnet URI
 
-### Managing Downloads
-- Use pause/resume buttons to control downloads
-- Click remove button to delete torrents
-- Expand peer section to view connected peers
-- Toggle theme using the icon in the header
+### Managing downloads
+- Pause/resume via the controls next to each torrent
+- Remove deletes the torrent entry and stops peer sessions
+- Expand a download to see peer/IP/port details and progress
+- Theme toggle lives in the header (dark/light)
 
-## Architecture
-
-```
-Frontend (React) ↔ WebSocket ↔ Backend (Node.js) ↔ TCP/UDP ↔ BitTorrent Network
-```
-
-### Backend Components
-- **server.js** - Express server with REST API and WebSocket
-- **torrent-parser.js** - Parses .torrent files using bencode
-- **magnet-parser.js** - Parses magnet links with hash decoding
-- **tracker.js** - HTTP and UDP tracker communication
-- **peer-manager.js** - TCP peer connections and BitTorrent protocol
-- **download-manager.js** - Download coordination and state management
-
-### Frontend Components
-- **App.js** - Main React component with state management
-- **Socket.IO client** - Real-time communication with backend
-- **Theme system** - Dark/light mode with CSS-in-JS
-
-## API Endpoints
-
-### REST API
-- `POST /api/torrent` - Upload .torrent file
-- `POST /api/magnet` - Add magnet link
-- `POST /api/download/:id/pause` - Pause download
-- `POST /api/download/:id/resume` - Resume download
-- `DELETE /api/download/:id` - Remove download
-
-### WebSocket Events
-- `torrent-added` - New torrent added
-- `download-progress` - Progress updates
-- `download-complete` - Download finished
-- `download-paused/resumed/removed` - State changes
-
-## Project Structure
+## Architecture overview
 
 ```
-mytorrent/
-├── backend/
-│   ├── server.js
-│   ├── torrent-parser.js
-│   ├── magnet-parser.js
-│   ├── tracker.js
-│   ├── udp-tracker.js
-│   ├── peer-manager.js
-│   └── download-manager.js
-├── frontend/
-│   └── src/
-│       ├── App.js
-│       └── index.js
-└── package.json
+React frontend <-> Socket.IO <-> Node.js backend <-> TCP/UDP <-> BitTorrent peers
 ```
 
-## BitTorrent Protocol Implementation
+### Backend
+- `server.js` � Express API + Socket.IO bridge
+- `torrent-parser.js` � .torrent decoding and infoHash generation
+- `magnet-parser.js` � Magnet URI parsing/validation
+- `tracker.js` / `udp-tracker.js` � Tracker announce logic
+- `peer-manager.js` � TCP peer sessions, message handling, piece requests
+- `download-manager.js` � Tracks active downloads, state, and Socket.IO events
 
-### Handshake Process
-1. Connect to peer via TCP
-2. Send handshake with protocol identifier and info hash
-3. Exchange bitfield messages
-4. Send interested message
-5. Wait for unchoke message
-6. Request pieces in 16KB blocks
+### Frontend
+- `src/App.js` � Main React surface & routing of events
+- Socket.IO client � Real-time link to backend state
+- Components for torrent list, peer view, controls, and theming
 
-### Message Types
-- `choke/unchoke` - Flow control
-- `interested/not interested` - Interest indication
-- `have` - Piece availability announcement
-- `bitfield` - Complete piece availability map
-- `request/piece` - Data transfer
+## API quick reference
 
-### Tracker Communication
-- HTTP tracker requests with announce URLs
-- UDP tracker protocol for efficiency
-- Multi-tracker fallback system
+### REST
+- `POST /api/torrent` � Upload a `.torrent`
+- `POST /api/magnet` � Submit a magnet link
+- `POST /api/download/:id/pause` � Pause a download
+- `POST /api/download/:id/resume` � Resume a paused download
+- `DELETE /api/download/:id` � Remove a download
 
-## Network Considerations
+### WebSocket events
+- `torrent-added`
+- `download-progress`
+- `download-complete`
+- `download-paused`, `download-resumed`, `download-removed`
 
-- Corporate/school networks may block BitTorrent traffic
-- Client gracefully handles network restrictions
-- Shows appropriate error messages when blocked
-- Supports both HTTP and UDP tracker protocols
+## BitTorrent protocol notes
 
-## Legal Notice
+1. Backend performs the 19-byte handshake, validates infoHash, and exchanges bitfield/interested/unchoke messages.
+2. Once unchoked, it requests pieces in 16 KB blocks and marks them complete as data arrives.
+3. UDP tracker announces send connection id, peer id, and transfer stats so trackers return real peers.
 
-This BitTorrent client is designed for legal content distribution, educational purposes, and personal use with legally obtained content. Users are responsible for ensuring compliance with local laws and regulations.
+## Networking tips
+
+- Open outbound UDP/TCP (default peer port 6881) for best results.
+- Some corporate or ISP networks block BitTorrent; the client will fall back to a waiting state but cannot force peers in that case.
+- Firewalls performing deep packet inspection may still interfere; consider testing on an unrestricted network.
+
+## Legal notice
+
+Use MyTorrent only with content you have the legal right to share or download. Respect local laws regarding peer-to-peer traffic.
 
 ## License
 
-MIT License - see LICENSE file for details.
+MIT License � see `LICENSE` for details.
