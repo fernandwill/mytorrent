@@ -1,5 +1,7 @@
 # MyTorrent
 
+<img width="937" height="437" alt="MyTorrent" src="https://github.com/user-attachments/assets/8b3b90fb-7474-457c-b278-0f7e1b098992" />
+
 A BitTorrent client built with React and Node.js featuring real peer-to-peer networking and a modern UI. The backend speaks to HTTP/UDP trackers, manages peer sessions, and streams progress to the React frontend over WebSockets.
 
 ## Features
@@ -81,26 +83,26 @@ React frontend <-> Socket.IO <-> Node.js backend <-> TCP/UDP <-> BitTorrent peer
 ```
 
 ### Backend
-- `server.js` – Express API + Socket.IO bridge
-- `torrent-parser.js` – .torrent decoding and infoHash generation
-- `magnet-parser.js` – Magnet URI parsing/validation
-- `tracker.js` / `udp-tracker.js` – Tracker announce logic
-- `peer-manager.js` – TCP peer sessions, message handling, piece requests
-- `download-manager.js` – Tracks active downloads, state, and Socket.IO events
+- `server.js` â€“ Express API + Socket.IO bridge
+- `torrent-parser.js` â€“ .torrent decoding and infoHash generation
+- `magnet-parser.js` â€“ Magnet URI parsing/validation
+- `tracker.js` / `udp-tracker.js` â€“ Tracker announce logic
+- `peer-manager.js` â€“ TCP peer sessions, message handling, piece requests
+- `download-manager.js` â€“ Tracks active downloads, state, and Socket.IO events
 
 ### Frontend
-- `src/App.js` – Main React surface & routing of events
-- Socket.IO client – Real-time link to backend state
+- `src/App.js` â€“ Main React surface & routing of events
+- Socket.IO client â€“ Real-time link to backend state
 - Components for torrent list, peer view, controls, and theming
 
 ## API quick reference
 
 ### REST
-- `POST /api/torrent` – Upload a `.torrent`
-- `POST /api/magnet` – Submit a magnet link
-- `POST /api/download/:id/pause` – Pause a download
-- `POST /api/download/:id/resume` – Resume a paused download
-- `DELETE /api/download/:id` – Remove a download
+- `POST /api/torrent` â€“ Upload a `.torrent`
+- `POST /api/magnet` â€“ Submit a magnet link
+- `POST /api/download/:id/pause` â€“ Pause a download
+- `POST /api/download/:id/resume` â€“ Resume a paused download
+- `DELETE /api/download/:id` â€“ Remove a download
 
 ### WebSocket events
 - `torrent-added`
@@ -126,4 +128,4 @@ Use MyTorrent only with content you have the legal right to share or download. R
 
 ## License
 
-MIT License – see `LICENSE` for details.
+MIT License â€“ see `LICENSE` for details.
